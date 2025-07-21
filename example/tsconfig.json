@@ -14,7 +14,8 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@data/*": ["src/data/*"]
+      "@data/*": ["src/data/*"],
+      "@otherQueries/*": ["src/otherQueries/*"]
     }
   },
   "include": ["src/**/*"],

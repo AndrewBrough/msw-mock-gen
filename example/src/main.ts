@@ -1,4 +1,4 @@
-import { useAssetsQuery } from "@data/queries/useAssetsQuery";
+import { useAssetsQuery } from "@otherQueries/useAssetsQuery";
 
 const { data } = useAssetsQuery();
 
