@@ -10,14 +10,14 @@ import { createMockDataContent } from "./content-generator";
  * @param root - Project root directory
  * @returns Array of generated mock data file information
  */
-export function generateMockDataFiles(
+export async function generateMockDataFiles(
   parsedFiles: ParsedQueryMutation[],
-  _root: string,
-): MockDataFile[] {
+  _root: string
+): Promise<MockDataFile[]> {
   const generatedFiles: MockDataFile[] = [];
 
   for (const parsedFile of parsedFiles) {
-    const mockDataFile = createMockDataFile(parsedFile, _root);
+    const mockDataFile = await createMockDataFile(parsedFile, _root);
 
     if (mockDataFile) {
       generatedFiles.push(mockDataFile);
@@ -34,10 +34,10 @@ export function generateMockDataFiles(
  * @param root - Project root directory
  * @returns Mock data file information or null if creation failed
  */
-function createMockDataFile(
+async function createMockDataFile(
   parsedFile: ParsedQueryMutation,
-  _root: string,
-): MockDataFile | null {
+  _root: string
+): Promise<MockDataFile | null> {
   // root parameter is kept for future use when we need to resolve relative paths
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { filePath, hookName, dataType, type } = parsedFile;
@@ -46,7 +46,13 @@ function createMockDataFile(
   const mockDataFilePath = createMockDataFilePath(filePath, hookName);
 
   // Generate the content for the mock data file
-  const content = createMockDataContent(hookName, dataType, type);
+  const content = await createMockDataContent(
+    hookName,
+    dataType,
+    type,
+    filePath,
+    _root
+  );
 
   // Ensure the output directory exists
   const outputDir = dirname(mockDataFilePath);
@@ -56,7 +62,7 @@ function createMockDataFile(
     } catch (error) {
       console.error(
         `MSW Mock Gen: Error creating directory ${outputDir}:`,
-        error,
+        error
       );
       return null;
     }
@@ -71,12 +77,12 @@ function createMockDataFile(
       mockDataFilePath,
       hookName,
       dataType,
-      type,
+      type
     };
   } catch (error) {
     console.error(
       `MSW Mock Gen: Error writing mock data file ${mockDataFilePath}:`,
-      error,
+      error
     );
     return null;
   }
@@ -91,7 +97,7 @@ function createMockDataFile(
  */
 function createMockDataFilePath(
   originalFilePath: string,
-  _hookName: string,
+  _hookName: string
 ): string {
   // hookName parameter kept for future use
   const dir = dirname(originalFilePath);

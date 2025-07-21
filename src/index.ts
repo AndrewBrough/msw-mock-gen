@@ -8,7 +8,7 @@ import { parseURLsFromFile, generateMSWHandlers } from "./parser";
 import { sterilize } from "./sterilize";
 import {
   parseQueryMutationFiles,
-  generateMockDataFiles,
+  generateMockDataFiles
 } from "./data-generation";
 
 export type { MSWMockGenOptions, MSWMockGenConfig } from "./types";
@@ -48,7 +48,7 @@ export type { MSWMockGenOptions, MSWMockGenConfig } from "./types";
  * ```
  */
 export default function mswMockGen(
-  options: MSWMockGenOptions = { configs: [] },
+  options: MSWMockGenOptions = { configs: [] }
 ): Plugin {
   const {
     configs = [],
@@ -57,7 +57,7 @@ export default function mswMockGen(
     outputFolder: topLevelOutputFolder = "src/mocks",
     outputFileName: topLevelOutputFileName = "mswHandlers.generated",
     excludePatterns: globalExcludePatterns = [],
-    formatScript,
+    formatScript
   } = options;
 
   // Default config if none provided
@@ -65,7 +65,7 @@ export default function mswMockGen(
     watchFolder: "src/data/queries",
     outputFolder: "src/data/queries/mocks",
     outputFileName: "mswHandlers.generated",
-    excludePatterns: [],
+    excludePatterns: []
   };
 
   // Use default config if no configs provided, otherwise use provided configs
@@ -127,7 +127,7 @@ export default function mswMockGen(
    */
   const mergeAllHandlers = async (
     root: string,
-    configs: MSWMockGenConfig[],
+    configs: MSWMockGenConfig[]
   ) => {
     if (!mergeHandlers || configs.length <= 1) {
       return;
@@ -165,7 +165,7 @@ export default function mswMockGen(
     for (const config of configs) {
       const {
         watchFolder = "src/data/queries",
-        outputFolder = "src/data/queries/mocks",
+        outputFolder = "src/data/queries/mocks"
       } = config;
 
       const watchPath = join(root, watchFolder);
@@ -182,11 +182,11 @@ export default function mswMockGen(
       // Check if the config's output files exist
       const queryHandlersFile = join(
         configOutputPath,
-        "queryHandlers.generated.ts",
+        "queryHandlers.generated.ts"
       );
       const mutationHandlersFile = join(
         configOutputPath,
-        "mutationHandlers.generated.ts",
+        "mutationHandlers.generated.ts"
       );
 
       if (existsSync(queryHandlersFile)) {
@@ -195,7 +195,7 @@ export default function mswMockGen(
 
           // Extract import statements (excluding MSW imports)
           const importMatches = content.matchAll(
-            /import\s+{[^}]+}\s+from\s+['"`][^'"`]+['"`];/g,
+            /import\s+{[^}]+}\s+from\s+['"`][^'"`]+['"`];/g
           );
           for (const match of importMatches) {
             if (!match[0].includes("msw")) {
@@ -205,7 +205,7 @@ export default function mswMockGen(
 
           // Extract the actual handlers (skip import statements)
           const handlersMatch = content.match(
-            /export const queryHandlers = \[([\s\S]*?)\];/,
+            /export const queryHandlers = \[([\s\S]*?)\];/
           );
           if (handlersMatch && handlersMatch[1].trim()) {
             allQueryHandlers.push(handlersMatch[1].trim());
@@ -213,7 +213,7 @@ export default function mswMockGen(
         } catch (error) {
           console.error(
             `MSW Mock Gen: Error reading query handlers from ${queryHandlersFile}:`,
-            error,
+            error
           );
         }
       }
@@ -224,7 +224,7 @@ export default function mswMockGen(
 
           // Extract import statements (excluding MSW imports)
           const importMatches = content.matchAll(
-            /import\s+{[^}]+}\s+from\s+['"`][^'"`]+['"`];/g,
+            /import\s+{[^}]+}\s+from\s+['"`][^'"`]+['"`];/g
           );
           for (const match of importMatches) {
             if (!match[0].includes("msw")) {
@@ -234,7 +234,7 @@ export default function mswMockGen(
 
           // Extract the actual handlers (skip import statements)
           const handlersMatch = content.match(
-            /export const mutationHandlers = \[([\s\S]*?)\];/,
+            /export const mutationHandlers = \[([\s\S]*?)\];/
           );
           if (handlersMatch && handlersMatch[1].trim()) {
             allMutationHandlers.push(handlersMatch[1].trim());
@@ -242,7 +242,7 @@ export default function mswMockGen(
         } catch (error) {
           console.error(
             `MSW Mock Gen: Error reading mutation handlers from ${mutationHandlersFile}:`,
-            error,
+            error
           );
         }
       }
@@ -281,37 +281,37 @@ export const handlers = [
       // Write merged query handlers
       const mergedQueryHandlersFile = join(
         topLevelOutputPath,
-        "queryHandlers.generated.ts",
+        "queryHandlers.generated.ts"
       );
       writeFileSync(mergedQueryHandlersFile, mergedQueryHandlers, "utf-8");
 
       // Write merged mutation handlers
       const mergedMutationHandlersFile = join(
         topLevelOutputPath,
-        "mutationHandlers.generated.ts",
+        "mutationHandlers.generated.ts"
       );
       writeFileSync(
         mergedMutationHandlersFile,
         mergedMutationHandlers,
-        "utf-8",
+        "utf-8"
       );
 
       // Write merged index file
       const mergedIndexFilePath = join(
         topLevelOutputPath,
-        `${topLevelOutputFileName}.ts`,
+        `${topLevelOutputFileName}.ts`
       );
       writeFileSync(mergedIndexFilePath, mergedIndexFile, "utf-8");
 
       const endTime = Date.now();
       const duration = endTime - startTime;
       log(
-        `MSW Mock Gen: Generated merged handlers at ${topLevelOutputPath} (${duration}ms)`,
+        `MSW Mock Gen: Generated merged handlers at ${topLevelOutputPath} (${duration}ms)`
       );
     } catch (error) {
       console.error(
         `MSW Mock Gen: Error writing merged handlers files:`,
-        error,
+        error
       );
     }
   };
@@ -326,13 +326,13 @@ export const handlers = [
       watchFolder = "src/data/queries",
       outputFolder = "src/data/queries/mocks",
       outputFileName = "mswHandlers.generated",
-      excludePatterns: configExcludePatterns = [],
+      excludePatterns: configExcludePatterns = []
     } = config;
 
     // Merge global and config-specific exclude patterns
     const excludePatterns = [
       ...globalExcludePatterns,
-      ...configExcludePatterns,
+      ...configExcludePatterns
     ];
 
     const watchPath = join(root, watchFolder);
@@ -379,8 +379,8 @@ export const handlers = [
         `**/*.generated.{ts,js,tsx,jsx}`,
         `**/*.generated/**`,
         `**/*.mocks.gen.{ts,js,tsx,jsx}`,
-        `**/*.mocks.gen/**`,
-      ],
+        `**/*.mocks.gen/**`
+      ]
     });
 
     const allUrls: ParsedURL[] = [];
@@ -398,13 +398,13 @@ export const handlers = [
           const queryMutations = parseQueryMutationFiles(
             content,
             file,
-            excludePatterns,
+            excludePatterns
           );
           allQueryMutations.push(...queryMutations);
         } catch (error) {
           console.error(
             `MSW Mock Gen: Error parsing query/mutation file ${file}:`,
-            error,
+            error
           );
         }
       } catch (error) {
@@ -413,7 +413,7 @@ export const handlers = [
     }
 
     // Generate mock data files first
-    const mockDataFiles = generateMockDataFiles(allQueryMutations, root);
+    const mockDataFiles = await generateMockDataFiles(allQueryMutations, root);
 
     // Generate MSW handlers with mock data
     const handlers = generateMSWHandlers(allUrls, mockDataFiles);
@@ -426,7 +426,7 @@ export const handlers = [
       // Write mutation handlers
       const mutationHandlersFile = join(
         outputPath,
-        "mutationHandlers.generated.ts",
+        "mutationHandlers.generated.ts"
       );
       writeFileSync(mutationHandlersFile, handlers.mutationHandlers, "utf-8");
 
@@ -435,7 +435,7 @@ export const handlers = [
       writeFileSync(indexFile, handlers.indexFile, "utf-8");
 
       log(
-        `MSW Mock Gen: Generated handlers at ${outputPath} with ${allUrls.length} endpoints and ${mockDataFiles.length} mock data files`,
+        `MSW Mock Gen: Generated handlers at ${outputPath} with ${allUrls.length} endpoints and ${mockDataFiles.length} mock data files`
       );
     } catch (error) {
       console.error(`MSW Mock Gen: Error writing handlers files:`, error);
@@ -469,11 +469,11 @@ export const handlers = [
    */
   const generateSingleConfigHandlers = async (
     root: string,
-    changedConfig: MSWMockGenConfig,
+    changedConfig: MSWMockGenConfig
   ) => {
     const startTime = Date.now();
     log(
-      `MSW Mock Gen: Regenerating handlers for config: ${changedConfig.watchFolder}`,
+      `MSW Mock Gen: Regenerating handlers for config: ${changedConfig.watchFolder}`
     );
 
     // Only regenerate the changed config
@@ -507,7 +507,7 @@ export const handlers = [
       for (const config of finalConfigs) {
         const {
           watchFolder = "src/data/queries",
-          outputFolder = "src/data/queries/mocks",
+          outputFolder = "src/data/queries/mocks"
         } = config;
         log(`MSW Mock Gen: Watching ${watchFolder} for changes`);
         log(`MSW Mock Gen: Output will be written to ${outputFolder}`);
@@ -515,7 +515,7 @@ export const handlers = [
 
       if (mergeHandlers) {
         log(
-          `MSW Mock Gen: Merged handlers will be written to ${topLevelOutputFolder}/${topLevelOutputFileName}.ts`,
+          `MSW Mock Gen: Merged handlers will be written to ${topLevelOutputFolder}/${topLevelOutputFileName}.ts`
         );
       }
 
@@ -527,7 +527,7 @@ export const handlers = [
         mergeHandlers,
         topLevelOutputFolder,
         topLevelOutputFileName,
-        log,
+        log
       );
 
       // Generate initial handlers for all configs
@@ -542,7 +542,7 @@ export const handlers = [
       for (const config of finalConfigs) {
         const {
           watchFolder = "src/data/queries",
-          outputFolder = "src/data/queries/mocks",
+          outputFolder = "src/data/queries/mocks"
         } = config;
         const watchPath = join(projectRoot, watchFolder);
 
@@ -590,11 +590,11 @@ export const handlers = [
         mergeHandlers,
         topLevelOutputFolder,
         topLevelOutputFileName,
-        log,
+        log
       );
 
       // Note: Initial generation is handled in configureServer to avoid duplication
       // Only sterilize here to ensure clean state for builds
-    },
+    }
   };
 }
