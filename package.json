@@ -5,6 +5,11 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
@@ -12,7 +17,9 @@
     "test:watch": "vitest --watch",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "prepublishOnly": "npm run build",
+    "prepack": "npm run build"
   },
   "keywords": [
     "vite",
@@ -31,16 +38,23 @@
     "auto-generate",
     "file-watcher"
   ],
-  "author": "",
+  "author": "Andrew Brough <your-actual-email@example.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-actual-username/msw-mock-gen.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-actual-username/msw-mock-gen/issues"
+  },
+  "homepage": "https://github.com/your-actual-username/msw-mock-gen#readme",
   "peerDependencies": {
     "@tanstack/react-query": "^5.37.1",
     "vite": "^7.0.0"
   },
   "dependencies": {
     "glob": "^11.0.3",
-    "msw": "^2.10.4",
-    "vite-tsconfig-paths": "^5.1.4"
+    "msw": "^2.10.4"
   },
   "devDependencies": {
     "@types/node": "^24.0.15",
