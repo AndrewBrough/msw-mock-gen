@@ -32,7 +32,7 @@ export const useLogoutMutation = <
     onSuccess: () => {
       // Navigate to login page after successful logout
       navigate({
-        to: "/login",
+        to: "/an-unexcluded-pattern",
       });
     },
     onError: (error) => {

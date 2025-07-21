@@ -6,7 +6,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "format": "prettier --write */mocks/*.generated.ts"
+    "format": "prettier --write **/mocks/*.generated.ts"
   },
   "devDependencies": {
     "typescript": "^5.0.0",

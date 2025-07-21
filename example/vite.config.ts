@@ -9,6 +9,7 @@ export default defineConfig({
       configs: [
         {
           watchFolder: "src/data",
+          excludePatterns: ["to: "],
         },
         {
           watchFolder: "src/otherQueries",
@@ -21,17 +22,18 @@ export default defineConfig({
       outputFolder: "src/mocks",
       // Top-level output file name for merged handlers (default: "mswHandlers.generated")
       outputFileName: "mswHandlers.generated",
+      /**
+       * This is the default exclude patterns, but you can override them by adding them to the excludePatterns array in the config.
+       * Both will not work, you need to use one or the other.
+       */
       excludePatterns: [
-        // Navigation patterns
-        "navigate({",
-        // Other common non-API URL patterns
-        'href: "/',
-        'pathname: "/',
-        'redirect: "/',
-        'location: "/',
-        'to: "/',
+        // Other common patterns
+        // 'to: "/',
+        // 'href: "/',
+        // 'pathname: "/',
+        // 'redirect: "/',
+        // 'location: "/',
       ],
-      // Run prettier after generating handlers to fix formatting
       formatScript: "format",
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }) as any,
