@@ -76,6 +76,57 @@ export class TypeAnalyzer {
     }
   }
 
+  /**
+   * Resolve a type by name across all known files in the project
+   */
+  async resolveTypeByName(typeName: string): Promise<TypeInfo | null> {
+    // Check cache first
+    if (this.typeCache.has(typeName)) {
+      return this.typeCache.get(typeName)!;
+    }
+
+    // Search for the type in common locations
+    const commonPaths = [
+      `src/data/types/${typeName}.ts`,
+      `src/types/${typeName}.ts`,
+      `src/@data/types/${typeName}.ts`,
+      `src/data/${typeName}.ts`,
+    ];
+
+    for (const relativePath of commonPaths) {
+      try {
+        const fullPath = path.resolve(this.projectRoot, relativePath);
+        if (fs.existsSync(fullPath)) {
+          const content = fs.readFileSync(fullPath, "utf-8");
+          return await this.analyzeType(typeName, content);
+        }
+      } catch (error) {
+        // Continue to next path
+      }
+    }
+
+    // If not found in common paths, try to search more broadly
+    try {
+      const glob = await import("glob");
+      const pattern = `**/${typeName}.ts`;
+      const files = await glob.glob(pattern, { cwd: this.projectRoot });
+      
+      for (const file of files) {
+        try {
+          const fullPath = path.resolve(this.projectRoot, file);
+          const content = fs.readFileSync(fullPath, "utf-8");
+          return await this.analyzeType(typeName, content);
+        } catch (error) {
+          // Continue to next file
+        }
+      }
+    } catch (error) {
+      // glob might not be available
+    }
+
+    return null;
+  }
+
   async analyzeType(typeName: string, content: string): Promise<TypeInfo> {
     // Check cache first
     if (this.typeCache.has(typeName)) {

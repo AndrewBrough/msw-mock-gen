@@ -22,13 +22,17 @@ export async function createMockDataContent(
   
   try {
     // Generate mock data using the type factory
-    const { generateMockDataForFile } = await import("./type-factory");
+    const { TypeFactory, TypeAnalyzer } = await import("./type-factory");
+    
+    // Create analyzer and factory
+    const analyzer = new TypeAnalyzer(projectRoot);
+    const factory = new TypeFactory(analyzer);
+    
+    // Analyze the file to get type info
+    const fileInfo = await analyzer.analyzeFile(originalFilePath);
     
     // Generate the mock data
-    const mockData = await generateMockDataForFile(
-      originalFilePath,
-      projectRoot,
-    );
+    const mockData = await factory.generateMockData(fileInfo.typeInfo);
     
     const exportStatement = `export const ${getMockDataName(
       hookName,

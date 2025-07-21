@@ -6,27 +6,19 @@ export type LogoutData = {
   message?: string;
 };
 
-export interface LogoutVariables {
-  // No variables needed for logout, but keeping interface for consistency
-}
-
 export const LOGOUT_MUTATION_KEY = "LOGOUT_MUTATION_KEY";
 
-export const useLogoutMutation = <
-  D extends LogoutData,
-  V extends LogoutVariables,
->() => {
+export const useLogoutMutation = () => {
   const navigate = useNavigate();
 
-  return useMutation<D, DefaultError, V>({
+  return useMutation<LogoutData, DefaultError>({
     mutationKey: [LOGOUT_MUTATION_KEY],
-    mutationFn: (variables) => {
+    mutationFn: () => {
       return fetch("/auth/logout", {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(variables),
       }).then((res) => res.json());
     },
     onSuccess: () => {

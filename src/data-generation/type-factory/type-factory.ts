@@ -21,24 +21,24 @@ export class TypeFactory {
     }
   }
 
-  generateMockData(typeInfo: TypeInfo): any {
+  async generateMockData(typeInfo: TypeInfo): Promise<any> {
     switch (typeInfo.kind) {
       case "interface":
-        return this.generateInterfaceData(typeInfo);
+        return await this.generateInterfaceData(typeInfo);
       case "array":
-        return this.generateArrayData(typeInfo);
+        return await this.generateArrayData(typeInfo);
       case "union":
-        return this.generateUnionData(typeInfo);
+        return await this.generateUnionData(typeInfo);
       case "primitive":
         return this.generatePrimitiveData(typeInfo);
       case "type":
-        return this.generateCustomTypeData(typeInfo);
+        return await this.generateCustomTypeData(typeInfo);
       default:
         throw new Error(`Unsupported type kind: ${typeInfo.kind}`);
     }
   }
 
-    private generateInterfaceData(typeInfo: TypeInfo): any {
+    private async generateInterfaceData(typeInfo: TypeInfo): Promise<any> {
     if (!typeInfo.properties) {
       throw new Error("Interface type must have properties");
     }
@@ -53,7 +53,7 @@ export class TypeFactory {
         }
       }
 
-      const value = this.generateMockData(property.type);
+      const value = await this.generateMockData(property.type);
       
       // Handle nullable properties
       if (property.isNullable && this.config.allowNull) {
@@ -70,7 +70,7 @@ export class TypeFactory {
     return result;
   }
 
-  private generateArrayData(typeInfo: TypeInfo): any[] {
+  private async generateArrayData(typeInfo: TypeInfo): Promise<any[]> {
     if (!typeInfo.arrayType) {
       throw new Error("Array type must have arrayType");
     }
@@ -79,13 +79,13 @@ export class TypeFactory {
     const result: any[] = [];
 
     for (let i = 0; i < length; i++) {
-      result.push(this.generateMockData(typeInfo.arrayType));
+      result.push(await this.generateMockData(typeInfo.arrayType));
     }
 
     return result;
   }
 
-  private generateUnionData(typeInfo: TypeInfo): any {
+  private async generateUnionData(typeInfo: TypeInfo): Promise<any> {
     if (!typeInfo.unionTypes || typeInfo.unionTypes.length === 0) {
       throw new Error("Union type must have unionTypes");
     }
@@ -94,7 +94,7 @@ export class TypeFactory {
     const randomIndex = Math.floor(Math.random() * typeInfo.unionTypes.length);
     const selectedType = typeInfo.unionTypes[randomIndex];
 
-    return this.generateMockData(selectedType);
+    return await this.generateMockData(selectedType);
   }
 
   private generatePrimitiveData(typeInfo: TypeInfo): any {
@@ -116,41 +116,28 @@ export class TypeFactory {
     }
   }
 
-    private generateCustomTypeData(typeInfo: TypeInfo): any {
+    private async generateCustomTypeData(typeInfo: TypeInfo): Promise<any> {
     const typeName = typeInfo.name.toLowerCase();
     
     // Check custom generators first
-    if (this.config.customGenerators && this.config.customGenerators[typeName]) {
+    if (
+      this.config.customGenerators &&
+      this.config.customGenerators[typeName]
+    ) {
       return this.config.customGenerators[typeName]();
     }
     
-    // Handle specific known types
-    if (typeName === "user") {
-      return {
-        id: this.getFieldValue("id"),
-        email: this.getFieldValue("email"),
-        firstName: this.getFieldValue("firstName"),
-        lastName: this.getFieldValue("lastName"),
-        role: this.getFieldValue("role"),
-        organizationId: this.getFieldValue("organizationId"),
-        createdAt: this.getFieldValue("createdAt"),
-        updatedAt: this.getFieldValue("updatedAt"),
-      };
-    }
-    
-    if (typeName === "asset") {
-      return {
-        id: this.getFieldValue("id"),
-        name: faker.commerce.productName(),
-        type: faker.commerce.product(),
-        manufacturer: this.getFieldValue("manufacturer"),
-        model: this.getFieldValue("model"),
-        serialNumber: this.getFieldValue("serialNumber"),
-        location: this.getFieldValue("location"),
-        status: this.getFieldValue("status"),
-        createdAt: this.getFieldValue("createdAt"),
-        updatedAt: this.getFieldValue("updatedAt"),
-      };
+    // For custom types, we need to resolve the actual type definition
+    // and generate data based on its properties
+    try {
+      // Try to resolve the type to get its actual definition
+      const resolvedType = await this.analyzer.resolveTypeByName(typeName);
+      if (resolvedType && resolvedType.kind === "interface") {
+        // Generate data based on the interface properties
+        return this.generateInterfaceData(resolvedType);
+      }
+    } catch (error) {
+      // If we can't resolve the type, fall back to field-based generation
     }
     
     // Try to find a field generator for this type name
