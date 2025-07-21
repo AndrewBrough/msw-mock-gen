@@ -2,29 +2,83 @@ import type { Plugin } from 'vite';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { glob } from 'glob';
-import { MSWMockGenOptions } from './types';
+import { MSWMockGenOptions, MSWMockGenConfig } from './types';
 import { parseURLsFromFile, generateMSWHandlers } from './parser';
 
-export type { MSWMockGenOptions } from './types';
+export type { MSWMockGenOptions, MSWMockGenConfig } from './types';
 
-export default function mswMockGen(options: MSWMockGenOptions = {}): Plugin {
+/**
+ * MSW Mock Generator - A Vite plugin that automatically generates MSW (Mock Service Worker) handlers
+ * from your API calls by watching specified folders and parsing TypeScript/JavaScript files for URL patterns.
+ * 
+ * @param options - Configuration options for the plugin
+ * @returns Vite plugin instance
+ * 
+ * @example
+ * ```typescript
+ * // vite.config.ts
+ * import { defineConfig } from 'vite';
+ * import mswMockGen from 'msw-mock-gen';
+ * 
+ * export default defineConfig({
+ *   plugins: [
+ *     mswMockGen({
+ *       configs: [
+ *         {
+ *           watchFolder: 'src/data/queries',
+ *           outputFolder: 'src/data/queries/mocks',
+ *           outputFileName: 'mswHandlers.generated',
+ *           excludePatterns: ['navigate({', 'to: "/']
+ *         }
+ *       ],
+ *       quiet: true
+ *     })
+ *   ]
+ * });
+ * ```
+ */
+export default function mswMockGen(options: MSWMockGenOptions = { configs: [] }): Plugin {
   const {
-    watchFolder = 'src/data/queries',
-    outputFolder = 'src/data/queries/mocks',
-    outputFileName = 'mswHandlers.generated',
-    excludePatterns = [],
+    configs = [],
     quiet = true
   } = options;
 
+  // Default config if none provided
+  const defaultConfig: MSWMockGenConfig = {
+    watchFolder: 'src/data/queries',
+    outputFolder: 'src/data/queries/mocks',
+    outputFileName: 'mswHandlers.generated',
+    excludePatterns: []
+  };
+
+  // Use default config if no configs provided, otherwise use provided configs
+  const finalConfigs = configs.length === 0 ? [defaultConfig] : configs;
+
   let projectRoot: string;
 
+  /**
+   * Logs messages to console if quiet mode is disabled
+   * @param args - Arguments to log
+   */
   const log = (...args: any[]) => {
     if (!quiet) {
       console.log(...args);
     }
   };
 
-  const generateHandlers = async (root: string) => {
+  /**
+   * Generates MSW handlers for a single configuration
+   * @param root - Project root directory
+   * @param config - Configuration for this watch/output folder pair
+   */
+  const generateHandlers = async (root: string, config: MSWMockGenConfig) => {
+    const {
+      watchFolder = 'src/data/queries',
+      outputFolder = 'src/data/queries/mocks',
+      outputFileName = 'mswHandlers.generated',
+      excludePatterns = []
+    } = config;
+
     const watchPath = join(root, watchFolder);
     const outputPath = join(root, outputFolder);
     
@@ -80,6 +134,16 @@ export default function mswMockGen(options: MSWMockGenOptions = {}): Plugin {
     }
   };
 
+  /**
+   * Generates MSW handlers for all configurations
+   * @param root - Project root directory
+   */
+  const generateAllHandlers = async (root: string) => {
+    for (const config of finalConfigs) {
+      await generateHandlers(root, config);
+    }
+  };
+
   return {
     name: 'msw-mock-gen',
     apply: 'serve',
@@ -89,37 +153,46 @@ export default function mswMockGen(options: MSWMockGenOptions = {}): Plugin {
     },
 
     configureServer(server) {
-      log(`MSW Mock Gen: Watching ${watchFolder} for changes`);
-      log(`MSW Mock Gen: Output will be written to ${outputFolder}`);
+      log(`MSW Mock Gen: Watching ${finalConfigs.length} configuration(s)`);
+      
+      for (const config of finalConfigs) {
+        const { watchFolder = 'src/data/queries', outputFolder = 'src/data/queries/mocks' } = config;
+        log(`MSW Mock Gen: Watching ${watchFolder} for changes`);
+        log(`MSW Mock Gen: Output will be written to ${outputFolder}`);
+      }
 
-      // Generate initial handlers
-      generateHandlers(projectRoot);
+      // Generate initial handlers for all configs
+      generateAllHandlers(projectRoot);
 
-      // Watch for file changes and deletions, but exclude the output folder
-      const watchPath = join(projectRoot, watchFolder);
-      if (existsSync(watchPath)) {
-        server.watcher.add(watchPath);
-        const handleFileEvent = (file: string) => {
-          // Check if the changed file is within the watchFolder or its subdirectories
-          const normalizedFile = file.replace(/\\/g, '/'); // Normalize path separators
-          const normalizedWatchPath = watchPath.replace(/\\/g, '/');
-          
-          // Skip changes to the output folder to prevent infinite loops
-          if (normalizedFile.startsWith(normalizedWatchPath) && !normalizedFile.includes(outputFolder)) {
-            log(`MSW Mock Gen: File changed: ${file}`);
-            generateHandlers(projectRoot);
-          }
-        };
+      // Watch for file changes and deletions for each config
+      for (const config of finalConfigs) {
+        const { watchFolder = 'src/data/queries', outputFolder = 'src/data/queries/mocks' } = config;
+        const watchPath = join(projectRoot, watchFolder);
+        
+        if (existsSync(watchPath)) {
+          server.watcher.add(watchPath);
+          const handleFileEvent = (file: string) => {
+            // Check if the changed file is within the watchFolder or its subdirectories
+            const normalizedFile = file.replace(/\\/g, '/'); // Normalize path separators
+            const normalizedWatchPath = watchPath.replace(/\\/g, '/');
+            
+            // Skip changes to the output folder to prevent infinite loops
+            if (normalizedFile.startsWith(normalizedWatchPath) && !normalizedFile.includes(outputFolder)) {
+              log(`MSW Mock Gen: File changed: ${file}`);
+              generateHandlers(projectRoot, config);
+            }
+          };
 
-        server.watcher.on('change', (file) => handleFileEvent(file));
-        server.watcher.on('unlink', (file) => handleFileEvent(file));
-        server.watcher.on('add', (file) => handleFileEvent(file));
+          server.watcher.on('change', (file) => handleFileEvent(file));
+          server.watcher.on('unlink', (file) => handleFileEvent(file));
+          server.watcher.on('add', (file) => handleFileEvent(file));
+        }
       }
     },
 
     buildStart() {
       log('MSW Mock Gen: Build started');
-      generateHandlers(projectRoot);
+      generateAllHandlers(projectRoot);
     }
   };
 } 

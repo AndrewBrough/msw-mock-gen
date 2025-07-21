@@ -1,6 +1,6 @@
 # MSW Mock Generator
 
-A Vite plugin that automatically generates MSW (Mock Service Worker) handlers from your API calls.
+A Vite plugin that automatically generates [MSW (Mock Service Worker)](https://www.npmjs.com/package/msw) handlers from your API calls.
 
 ## Features
 
@@ -9,6 +9,7 @@ A Vite plugin that automatically generates MSW (Mock Service Worker) handlers fr
 - Watches for file changes and regenerates handlers automatically
 - Excludes navigation URLs and other non-API patterns
 - Supports custom exclusion patterns
+- **NEW**: Support for multiple watch/output folder configurations
 
 ## Installation
 
@@ -22,17 +23,61 @@ npm install msw-mock-gen
 
 ```typescript
 // vite.config.ts
-import { defineConfig } from 'vite';
-import mswMockGen from 'msw-mock-gen';
+import { defineConfig } from "vite";
+import mswMockGen from "msw-mock-gen";
 
 export default defineConfig({
   plugins: [
     mswMockGen({
-      watchFolder: 'src/data',
-      outputFolder: 'src/data/mocks',
-      outputFileName: 'mswHandlers.generated'
-    })
-  ]
+      configs: [
+        {
+          watchFolder: "src/data",
+          outputFolder: "src/data/mocks",
+          outputFileName: "mswHandlers.generated",
+        },
+      ],
+    }),
+  ],
+});
+```
+
+### Multiple Folder Configuration
+
+```typescript
+// vite.config.ts
+import { defineConfig } from "vite";
+import mswMockGen from "msw-mock-gen";
+
+export default defineConfig({
+  plugins: [
+    mswMockGen({
+      configs: [
+        {
+          watchFolder: "src/data/queries",
+          outputFolder: "src/data/queries/mocks",
+          outputFileName: "mswHandlers.generated",
+          excludePatterns: [
+            // Navigation patterns
+            "navigate({",
+            'to: "/',
+            "router.push(",
+            // Other common non-API URL patterns
+            'href: "/',
+            'pathname: "/',
+            'redirect: "/',
+            'location: "/',
+          ],
+        },
+        {
+          watchFolder: "src/api",
+          outputFolder: "src/api/mocks",
+          outputFileName: "apiHandlers.generated",
+          excludePatterns: [],
+        },
+      ],
+      quiet: true,
+    }),
+  ],
 });
 ```
 
@@ -40,42 +85,54 @@ export default defineConfig({
 
 ```typescript
 // vite.config.ts
-import { defineConfig } from 'vite';
-import mswMockGen from 'msw-mock-gen';
+import { defineConfig } from "vite";
+import mswMockGen from "msw-mock-gen";
 
 export default defineConfig({
   plugins: [
     mswMockGen({
-      watchFolder: 'src/data',
-      outputFolder: 'src/data/mocks',
-      outputFileName: 'mswHandlers.generated',
-      excludePatterns: [
-        // Navigation patterns
-        'navigate({',
-        'navigate({ to:',
-        'to: "/',
-        'router.push(',
-        'router.navigate(',
-        // Other common non-API URL patterns
-        'href: "/',
-        'pathname: "/',
-        'redirect: "/',
-        'location: "/'
-      ]
-    })
-  ]
+      configs: [
+        {
+          watchFolder: "src/data",
+          outputFolder: "src/data/mocks",
+          outputFileName: "mswHandlers.generated",
+          excludePatterns: [
+            // Navigation patterns
+            "navigate({",
+            "navigate({ to:",
+            'to: "/',
+            "router.push(",
+            "router.navigate(",
+            // Other common non-API URL patterns
+            'href: "/',
+            'pathname: "/',
+            'redirect: "/',
+            'location: "/',
+          ],
+        },
+      ],
+    }),
+  ],
 });
 ```
 
 ## Configuration Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `watchFolder` | `string` | `'data'` | Folder to watch for API endpoint definitions |
-| `outputFolder` | `string` | `'src'` | Folder where generated handlers will be written |
-| `outputFileName` | `string` | `'mswHandlers.generated'` | Base name for generated files |
-| `excludePatterns` | `string[]` | `[]` | Array of patterns to exclude from URL detection |
-| `quiet` | `boolean` | `true` | Whether to suppress console output (set to `false` for verbose logging) |
+### Top-level Options
+
+| Option    | Type                 | Default | Description                                                             |
+| --------- | -------------------- | ------- | ----------------------------------------------------------------------- |
+| `configs` | `MSWMockGenConfig[]` | `[]`    | Array of configuration objects for different watch/output folder pairs  |
+| `quiet`   | `boolean`            | `true`  | Whether to suppress console output (set to `false` for verbose logging) |
+
+### Individual Config Options
+
+| Option            | Type       | Default                    | Description                                     |
+| ----------------- | ---------- | -------------------------- | ----------------------------------------------- |
+| `watchFolder`     | `string`   | `'src/data/queries'`       | Folder to watch for API endpoint definitions    |
+| `outputFolder`    | `string`   | `'src/data/queries/mocks'` | Folder where generated handlers will be written |
+| `outputFileName`  | `string`   | `'mswHandlers.generated'`  | Base name for generated files                   |
+| `excludePatterns` | `string[]` | `[]`                       | Array of patterns to exclude from URL detection |
 
 ### Verbose Logging
 
@@ -83,18 +140,22 @@ To enable verbose logging and see all plugin activity, set `quiet: false`:
 
 ```typescript
 // vite.config.ts
-import { defineConfig } from 'vite';
-import mswMockGen from 'msw-mock-gen';
+import { defineConfig } from "vite";
+import mswMockGen from "msw-mock-gen";
 
 export default defineConfig({
   plugins: [
     mswMockGen({
-      watchFolder: 'src/data',
-      outputFolder: 'src/data/mocks',
-      outputFileName: 'mswHandlers.generated',
-      quiet: false // Enable verbose logging
-    })
-  ]
+      configs: [
+        {
+          watchFolder: "src/data",
+          outputFolder: "src/data/mocks",
+          outputFileName: "mswHandlers.generated",
+        },
+      ],
+      quiet: false, // Enable verbose logging
+    }),
+  ],
 });
 ```
 
@@ -103,6 +164,7 @@ export default defineConfig({
 The `excludePatterns` option allows you to specify patterns that should be excluded from URL detection. This is useful for filtering out navigation URLs, router paths, and other non-API endpoints.
 
 Common patterns to exclude:
+
 - `'navigate({'` - React Router navigation
 - `'to: "/'` - Navigation destinations
 - `'router.push('` - Router navigation methods
@@ -111,11 +173,11 @@ Common patterns to exclude:
 
 ## Generated Files
 
-The plugin generates three files:
+For each configuration, the plugin generates three files:
 
 1. `queryHandlers.generated.ts` - Handlers for GET requests
 2. `mutationHandlers.generated.ts` - Handlers for POST/PUT/DELETE requests
-3. `mswHandlers.generated.ts` - Index file that combines all handlers
+3. `{outputFileName}.ts` - Index file that combines all handlers
 
 ## Example
 
@@ -142,15 +204,15 @@ The plugin will generate:
 
 ```typescript
 // src/data/mocks/mutationHandlers.generated.ts
-import { http, HttpResponse } from 'msw';
+import { http, HttpResponse } from "msw";
 
 export const mutationHandlers = [
-  http.post('/auth/login', () => {
+  http.post("/auth/login", () => {
     return HttpResponse.json({
-      message: 'Mock response for /auth/login',
-      timestamp: new Date().toISOString()
+      message: "Mock response for /auth/login",
+      timestamp: new Date().toISOString(),
     });
-  })
+  }),
 ];
 ```
 

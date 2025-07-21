@@ -1,5 +1,28 @@
 import { ParsedURL } from './types';
 
+/**
+ * Parses TypeScript/JavaScript files to extract API endpoint URLs
+ * 
+ * This function analyzes source code to find URL patterns that represent API endpoints.
+ * It uses regex patterns to match URLs in various contexts like string literals, object properties,
+ * and array elements. The function also determines if the file is a query or mutation based on
+ * the filename and attempts to infer the HTTP method from the context.
+ * 
+ * @param content - The source code content to parse
+ * @param filename - The name of the file being parsed (used to determine query vs mutation)
+ * @param excludePatterns - Array of patterns to exclude from URL detection
+ * @returns Array of parsed URLs with metadata
+ * 
+ * @example
+ * ```typescript
+ * const urls = parseURLsFromFile(
+ *   'fetch("/api/users")',
+ *   'useUsersQuery.ts',
+ *   ['navigate({']
+ * );
+ * // Returns: [{ path: '/api/users', method: 'get', source: 'useUsersQuery.ts', line: 1, type: 'query' }]
+ * ```
+ */
 export function parseURLsFromFile(content: string, filename: string, excludePatterns: string[] = []): ParsedURL[] {
   const urls: ParsedURL[] = [];
   const lines = content.split('\n');
@@ -78,6 +101,31 @@ export function parseURLsFromFile(content: string, filename: string, excludePatt
   return urls;
 }
 
+/**
+ * Generates MSW handler code from parsed URLs
+ * 
+ * This function takes an array of parsed URLs and generates the corresponding MSW handler code.
+ * It separates URLs by type (query, mutation, unknown) and generates appropriate HTTP handlers
+ * for each endpoint. The generated code includes proper imports and exports for use with MSW.
+ * 
+ * @param urls - Array of parsed URLs to generate handlers for
+ * @returns Object containing generated handler code for queries, mutations, and index file
+ * 
+ * @example
+ * ```typescript
+ * const handlers = generateMSWHandlers([
+ *   { path: '/api/users', method: 'get', source: 'file.ts', type: 'query' },
+ *   { path: '/api/users', method: 'post', source: 'file.ts', type: 'mutation' }
+ * ]);
+ * 
+ * // Returns:
+ * // {
+ * //   queryHandlers: "import { http, HttpResponse } from 'msw';...",
+ * //   mutationHandlers: "import { http, HttpResponse } from 'msw';...",
+ * //   indexFile: "import { queryHandlers } from './queryHandlers.generated';..."
+ * // }
+ * ```
+ */
 export function generateMSWHandlers(urls: ParsedURL[]): { queryHandlers: string; mutationHandlers: string; indexFile: string } {
   if (urls.length === 0) {
     const emptyHandlers = `import { http, HttpResponse } from 'msw';
