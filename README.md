@@ -326,6 +326,7 @@ export const useLoginMutation = () => {
 The plugin will generate:
 
 **Mock Data File:**
+
 ```typescript
 // src/data/mutations/LoginMutation/useLoginMutation.mocks.gen.ts
 import { useLoginMutation } from "./useLoginMutation";
@@ -336,6 +337,7 @@ export const mockLoginMutationData: QueryData = undefined; // TODO: Replace with
 ```
 
 **MSW Handler:**
+
 ```typescript
 // src/data/mocks/mutationHandlers.generated.ts
 import { http, HttpResponse } from "msw";
