@@ -81,6 +81,63 @@ export default defineConfig({
 });
 ```
 
+### Merged Handlers Configuration
+
+When using multiple configurations, you can merge all handlers into a single output location for easier integration with MSW:
+
+```typescript
+// vite.config.ts
+import { defineConfig } from "vite";
+import mswMockGen from "msw-mock-gen";
+
+export default defineConfig({
+  plugins: [
+    mswMockGen({
+      configs: [
+        {
+          watchFolder: "src/data/queries",
+          outputFolder: "src/data/mocks",
+          outputFileName: "mswHandlers.generated",
+          excludePatterns: ["navigate({", 'to: "/'],
+        },
+        {
+          watchFolder: "src/api",
+          outputFolder: "src/api/mocks",
+          outputFileName: "apiHandlers.generated",
+          excludePatterns: [],
+        },
+      ],
+      // Merge all handlers into a single output location (default: true)
+      mergeHandlers: true,
+      // Top-level output folder for merged handlers (default: "src/mocks")
+      outputFolder: "src/mocks",
+      // Top-level output file name for merged handlers (default: "mswHandlers.generated")
+      outputFileName: "mswHandlers.generated",
+      quiet: false,
+    }),
+  ],
+});
+```
+
+This configuration will:
+
+1. Generate individual handler files in each config's `outputFolder`
+2. Additionally create merged files at `src/mocks/` containing all handlers from all configs
+3. The merged files will be:
+   - `src/mocks/queryHandlers.generated.ts` - All query handlers from all configs
+   - `src/mocks/mutationHandlers.generated.ts` - All mutation handlers from all configs
+   - `src/mocks/mswHandlers.generated.ts` - Index file combining all handlers
+
+This makes it easy to import all your MSW handlers in one place:
+
+```typescript
+// src/mocks/browser.ts
+import { handlers } from "./mswHandlers.generated";
+import { setupWorker } from "msw/browser";
+
+export const worker = setupWorker(...handlers);
+```
+
 ### Advanced Configuration with Exclusions
 
 ```typescript
@@ -120,10 +177,13 @@ export default defineConfig({
 
 ### Top-level Options
 
-| Option    | Type                 | Default | Description                                                             |
-| --------- | -------------------- | ------- | ----------------------------------------------------------------------- |
-| `configs` | `MSWMockGenConfig[]` | `[]`    | Array of configuration objects for different watch/output folder pairs  |
-| `quiet`   | `boolean`            | `true`  | Whether to suppress console output (set to `false` for verbose logging) |
+| Option           | Type                 | Default                   | Description                                                               |
+| ---------------- | -------------------- | ------------------------- | ------------------------------------------------------------------------- |
+| `configs`        | `MSWMockGenConfig[]` | `[]`                      | Array of configuration objects for different watch/output folder pairs    |
+| `quiet`          | `boolean`            | `true`                    | Whether to suppress console output (set to `false` for verbose logging)   |
+| `mergeHandlers`  | `boolean`            | `true`                    | Whether to merge all handlers from different configs into a single output |
+| `outputFolder`   | `string`             | `'src/mocks'`             | Top-level output folder for merged handlers                               |
+| `outputFileName` | `string`             | `'mswHandlers.generated'` | Top-level output file name for merged handlers                            |
 
 ### Individual Config Options
 
@@ -178,6 +238,12 @@ For each configuration, the plugin generates three files:
 1. `queryHandlers.generated.ts` - Handlers for GET requests
 2. `mutationHandlers.generated.ts` - Handlers for POST/PUT/DELETE requests
 3. `{outputFileName}.ts` - Index file that combines all handlers
+
+When `mergeHandlers` is enabled (default), the plugin also generates merged files at the top-level output location:
+
+1. `{outputFolder}/queryHandlers.generated.ts` - All query handlers from all configs
+2. `{outputFolder}/mutationHandlers.generated.ts` - All mutation handlers from all configs
+3. `{outputFolder}/{outputFileName}.ts` - Index file combining all handlers from all configs
 
 ## Example
 

@@ -13,7 +13,7 @@ export const LOGIN_MUTATION_KEY = "LOGIN_MUTATION_KEY";
 
 export const useLoginMutation = <
   D extends LoginData,
-  V extends LoginVariables,
+  V extends LoginVariables
 >() => {
   const navigate = useNavigate();
 

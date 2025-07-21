@@ -20,6 +20,12 @@ export interface MSWMockGenOptions {
   configs: MSWMockGenConfig[];
   /** Whether to suppress console output (set to false for verbose logging) */
   quiet?: boolean;
+  /** Whether to merge all handlers from different configs into a single output (default: true) */
+  mergeHandlers?: boolean;
+  /** Top-level output folder for merged handlers (default: "src/mocks") */
+  outputFolder?: string;
+  /** Top-level output file name for merged handlers (default: "mswHandlers.generated") */
+  outputFileName?: string;
 }
 
 /**

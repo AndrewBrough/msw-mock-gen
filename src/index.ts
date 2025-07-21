@@ -31,16 +31,25 @@ export type { MSWMockGenOptions, MSWMockGenConfig } from "./types";
  *           excludePatterns: ['navigate({', 'to: "/']
  *         }
  *       ],
- *       quiet: true
+ *       quiet: true,
+ *       mergeHandlers: true,
+ *       outputFolder: 'src/mocks',
+ *       outputFileName: 'mswHandlers.generated'
  *     })
  *   ]
  * });
  * ```
  */
 export default function mswMockGen(
-  options: MSWMockGenOptions = { configs: [] },
+  options: MSWMockGenOptions = { configs: [] }
 ): Plugin {
-  const { configs = [], quiet = true } = options;
+  const {
+    configs = [],
+    quiet = true,
+    mergeHandlers = true,
+    outputFolder: topLevelOutputFolder = "src/mocks",
+    outputFileName: topLevelOutputFileName = "mswHandlers.generated",
+  } = options;
 
   // Default config if none provided
   const defaultConfig: MSWMockGenConfig = {
@@ -62,6 +71,158 @@ export default function mswMockGen(
   const log = (...args: string[]) => {
     if (!quiet) {
       console.log(...args);
+    }
+  };
+
+  /**
+   * Merges multiple handler files into a single output
+   * @param root - Project root directory
+   * @param configs - Array of configurations
+   */
+  const mergeAllHandlers = async (
+    root: string,
+    configs: MSWMockGenConfig[]
+  ) => {
+    if (!mergeHandlers || configs.length <= 1) {
+      return;
+    }
+
+    const topLevelOutputPath = join(root, topLevelOutputFolder);
+
+    // Ensure top-level output directory exists
+    if (!existsSync(topLevelOutputPath)) {
+      try {
+        mkdirSync(topLevelOutputPath, { recursive: true });
+      } catch {
+        // Fallback for older Node.js versions that don't support recursive option
+        const pathParts = topLevelOutputPath.split("/");
+        let currentPath = "";
+        for (const part of pathParts) {
+          if (part) {
+            currentPath += "/" + part;
+            if (!existsSync(currentPath)) {
+              mkdirSync(currentPath);
+            }
+          }
+        }
+      }
+    }
+
+    const allQueryHandlers: string[] = [];
+    const allMutationHandlers: string[] = [];
+
+    // Collect handlers from all configs
+    for (const config of configs) {
+      const { outputFolder = "src/data/queries/mocks" } = config;
+
+      const configOutputPath = join(root, outputFolder);
+
+      // Check if the config's output files exist
+      const queryHandlersFile = join(
+        configOutputPath,
+        "queryHandlers.generated.ts"
+      );
+      const mutationHandlersFile = join(
+        configOutputPath,
+        "mutationHandlers.generated.ts"
+      );
+
+      if (existsSync(queryHandlersFile)) {
+        try {
+          const content = readFileSync(queryHandlersFile, "utf-8");
+          // Extract the actual handlers (skip import statements)
+          const handlersMatch = content.match(
+            /export const queryHandlers = \[([\s\S]*?)\];/
+          );
+          if (handlersMatch && handlersMatch[1].trim()) {
+            allQueryHandlers.push(handlersMatch[1].trim());
+          }
+        } catch (error) {
+          console.error(
+            `MSW Mock Gen: Error reading query handlers from ${queryHandlersFile}:`,
+            error
+          );
+        }
+      }
+
+      if (existsSync(mutationHandlersFile)) {
+        try {
+          const content = readFileSync(mutationHandlersFile, "utf-8");
+          // Extract the actual handlers (skip import statements)
+          const handlersMatch = content.match(
+            /export const mutationHandlers = \[([\s\S]*?)\];/
+          );
+          if (handlersMatch && handlersMatch[1].trim()) {
+            allMutationHandlers.push(handlersMatch[1].trim());
+          }
+        } catch (error) {
+          console.error(
+            `MSW Mock Gen: Error reading mutation handlers from ${mutationHandlersFile}:`,
+            error
+          );
+        }
+      }
+    }
+
+    // Generate merged files
+    const mergedQueryHandlers =
+      allQueryHandlers.length > 0
+        ? `import { http, HttpResponse } from 'msw';
+
+export const queryHandlers = [
+${allQueryHandlers.join(",\n")}
+];`
+        : `export const queryHandlers = [];`;
+
+    const mergedMutationHandlers =
+      allMutationHandlers.length > 0
+        ? `import { http, HttpResponse } from 'msw';
+
+export const mutationHandlers = [
+${allMutationHandlers.join(",\n")}
+];`
+        : `export const mutationHandlers = [];`;
+
+    const mergedIndexFile = `import { queryHandlers } from './queryHandlers.generated';
+import { mutationHandlers } from './mutationHandlers.generated';
+
+export const handlers = [
+  ...queryHandlers,
+  ...mutationHandlers
+];`;
+
+    try {
+      // Write merged query handlers
+      const mergedQueryHandlersFile = join(
+        topLevelOutputPath,
+        "queryHandlers.generated.ts"
+      );
+      writeFileSync(mergedQueryHandlersFile, mergedQueryHandlers, "utf-8");
+
+      // Write merged mutation handlers
+      const mergedMutationHandlersFile = join(
+        topLevelOutputPath,
+        "mutationHandlers.generated.ts"
+      );
+      writeFileSync(
+        mergedMutationHandlersFile,
+        mergedMutationHandlers,
+        "utf-8"
+      );
+
+      // Write merged index file
+      const mergedIndexFilePath = join(
+        topLevelOutputPath,
+        `${topLevelOutputFileName}.ts`
+      );
+      writeFileSync(mergedIndexFilePath, mergedIndexFile, "utf-8");
+
+      log(`MSW Mock Gen: Generated merged handlers at ${topLevelOutputPath}`);
+    } catch (error) {
+      console.error(
+        `MSW Mock Gen: Error writing merged handlers files:`,
+        error
+      );
     }
   };
 
@@ -92,11 +253,11 @@ export default function mswMockGen(
         mkdirSync(outputPath, { recursive: true });
       } catch {
         // Fallback for older Node.js versions that don't support recursive option
-        const pathParts = outputPath.split('/');
-        let currentPath = '';
+        const pathParts = outputPath.split("/");
+        let currentPath = "";
         for (const part of pathParts) {
           if (part) {
-            currentPath += '/' + part;
+            currentPath += "/" + part;
             if (!existsSync(currentPath)) {
               mkdirSync(currentPath);
             }
@@ -136,7 +297,7 @@ export default function mswMockGen(
       // Write mutation handlers
       const mutationHandlersFile = join(
         outputPath,
-        "mutationHandlers.generated.ts",
+        "mutationHandlers.generated.ts"
       );
       writeFileSync(mutationHandlersFile, handlers.mutationHandlers, "utf-8");
 
@@ -145,7 +306,7 @@ export default function mswMockGen(
       writeFileSync(indexFile, handlers.indexFile, "utf-8");
 
       log(
-        `MSW Mock Gen: Generated handlers at ${outputPath} with ${allUrls.length} endpoints`,
+        `MSW Mock Gen: Generated handlers at ${outputPath} with ${allUrls.length} endpoints`
       );
     } catch (error) {
       console.error(`MSW Mock Gen: Error writing handlers files:`, error);
@@ -160,6 +321,9 @@ export default function mswMockGen(
     for (const config of finalConfigs) {
       await generateHandlers(root, config);
     }
+
+    // Merge handlers if enabled
+    await mergeAllHandlers(root, finalConfigs);
   };
 
   return {
@@ -180,6 +344,12 @@ export default function mswMockGen(
         } = config;
         log(`MSW Mock Gen: Watching ${watchFolder} for changes`);
         log(`MSW Mock Gen: Output will be written to ${outputFolder}`);
+      }
+
+      if (mergeHandlers) {
+        log(
+          `MSW Mock Gen: Merged handlers will be written to ${topLevelOutputFolder}/${topLevelOutputFileName}.ts`
+        );
       }
 
       // Generate initial handlers for all configs
@@ -206,7 +376,7 @@ export default function mswMockGen(
               !normalizedFile.includes(outputFolder)
             ) {
               log(`MSW Mock Gen: File changed: ${file}`);
-              generateHandlers(projectRoot, config);
+              generateAllHandlers(projectRoot);
             }
           };
 

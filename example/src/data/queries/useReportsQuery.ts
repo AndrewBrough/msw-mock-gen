@@ -12,6 +12,7 @@ export const useReportsQuery = (filters: ReportsFilters) => {
     queryFn: () => {
       return fetch("/reports", {
         method: "POST",
+
         body: JSON.stringify(filters),
       }).then((res) => res.json());
     },

@@ -26,7 +26,7 @@ import { ParsedURL } from "./types";
 export function parseURLsFromFile(
   content: string,
   filename: string,
-  excludePatterns: string[] = [],
+  excludePatterns: string[] = []
 ): ParsedURL[] {
   const urls: ParsedURL[] = [];
   const lines = content.split("\n");
@@ -54,7 +54,7 @@ export function parseURLsFromFile(
 
     // Check if this line should be excluded based on patterns
     const shouldExcludeLine = excludePatterns.some((pattern) =>
-      line.includes(pattern),
+      line.includes(pattern)
     );
 
     if (shouldExcludeLine) {
@@ -151,15 +151,9 @@ export function generateMSWHandlers(urls: ParsedURL[]): {
   indexFile: string;
 } {
   if (urls.length === 0) {
-    const emptyHandlers = `import { http, HttpResponse } from 'msw';
-
-export const handlers = [
-  // No API endpoints found
-];`;
-
     return {
-      queryHandlers: emptyHandlers,
-      mutationHandlers: emptyHandlers,
+      queryHandlers: `export const queryHandlers = [];`,
+      mutationHandlers: `export const mutationHandlers = [];`,
       indexFile: `import { queryHandlers } from './queryHandlers.generated';
 import { mutationHandlers } from './mutationHandlers.generated';
 
@@ -177,13 +171,13 @@ export const handlers = [
 
   // Deduplicate URLs by path within each category
   const uniqueQueryUrls = queryUrls.filter(
-    (url, index, self) => index === self.findIndex((u) => u.path === url.path),
+    (url, index, self) => index === self.findIndex((u) => u.path === url.path)
   );
   const uniqueMutationUrls = mutationUrls.filter(
-    (url, index, self) => index === self.findIndex((u) => u.path === url.path),
+    (url, index, self) => index === self.findIndex((u) => u.path === url.path)
   );
   const uniqueUnknownUrls = unknownUrls.filter(
-    (url, index, self) => index === self.findIndex((u) => u.path === url.path),
+    (url, index, self) => index === self.findIndex((u) => u.path === url.path)
   );
 
   // Generate query handlers
@@ -219,17 +213,23 @@ export const handlers = [
   })`;
   });
 
-  const queryHandlersCode = `import { http, HttpResponse } from 'msw';
+  const queryHandlersCode =
+    queryHandlers.concat(unknownHandlers).length > 0
+      ? `import { http, HttpResponse } from 'msw';
 
 export const queryHandlers = [
 ${queryHandlers.concat(unknownHandlers).join(",\n")}
-];`;
+];`
+      : `export const queryHandlers = [];`;
 
-  const mutationHandlersCode = `import { http, HttpResponse } from 'msw';
+  const mutationHandlersCode =
+    mutationHandlers.length > 0
+      ? `import { http, HttpResponse } from 'msw';
 
 export const mutationHandlers = [
 ${mutationHandlers.join(",\n")}
-];`;
+];`
+      : `export const mutationHandlers = [];`;
 
   const indexFileCode = `import { queryHandlers } from './queryHandlers.generated';
 import { mutationHandlers } from './mutationHandlers.generated';
