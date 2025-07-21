@@ -25,7 +25,15 @@ export default defineConfig({
           watchFolder: "src/otherQueries",
           outputFolder: "src/otherQueries/mocks",
           outputFileName: "mswHandlers.generated",
-          excludePatterns: [],
+          excludePatterns: [
+            // Navigation patterns
+            "navigate({",
+            // Other common non-API URL patterns
+            'href: "/',
+            'pathname: "/',
+            'redirect: "/',
+            'location: "/',
+          ],
         },
         // Example of additional configuration
         // {

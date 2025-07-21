@@ -4,6 +4,7 @@ import { join } from "path";
 import { glob } from "glob";
 import { MSWMockGenOptions, MSWMockGenConfig, ParsedURL } from "./types";
 import { parseURLsFromFile, generateMSWHandlers } from "./parser";
+import { sterilize, cleanupSourceFiles } from "./sterilize";
 
 export type { MSWMockGenOptions, MSWMockGenConfig } from "./types";
 
@@ -86,6 +87,9 @@ export default function mswMockGen(
     if (!mergeHandlers || configs.length <= 1) {
       return;
     }
+
+    const startTime = Date.now();
+    log("MSW Mock Gen: Starting handler merging...");
 
     const topLevelOutputPath = join(root, topLevelOutputFolder);
 
@@ -217,7 +221,14 @@ export const handlers = [
       );
       writeFileSync(mergedIndexFilePath, mergedIndexFile, "utf-8");
 
-      log(`MSW Mock Gen: Generated merged handlers at ${topLevelOutputPath}`);
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+      log(
+        `MSW Mock Gen: Generated merged handlers at ${topLevelOutputPath} (${duration}ms)`
+      );
+
+      // Clean up source files after successful merge
+      cleanupSourceFiles(root, configs, log);
     } catch (error) {
       console.error(
         `MSW Mock Gen: Error writing merged handlers files:`,
@@ -318,12 +329,19 @@ export const handlers = [
    * @param root - Project root directory
    */
   const generateAllHandlers = async (root: string) => {
+    const startTime = Date.now();
+    log("MSW Mock Gen: Starting handler generation...");
+
     for (const config of finalConfigs) {
       await generateHandlers(root, config);
     }
 
     // Merge handlers if enabled
     await mergeAllHandlers(root, finalConfigs);
+
+    const endTime = Date.now();
+    const duration = endTime - startTime;
+    log(`MSW Mock Gen: Handler generation complete (${duration}ms)`);
   };
 
   return {
@@ -351,6 +369,16 @@ export const handlers = [
           `MSW Mock Gen: Merged handlers will be written to ${topLevelOutputFolder}/${topLevelOutputFileName}.ts`
         );
       }
+
+      // Sterilize output directories before starting
+      sterilize(
+        projectRoot,
+        finalConfigs,
+        mergeHandlers,
+        topLevelOutputFolder,
+        topLevelOutputFileName,
+        log
+      );
 
       // Generate initial handlers for all configs
       generateAllHandlers(projectRoot);
@@ -389,6 +417,17 @@ export const handlers = [
 
     buildStart() {
       log("MSW Mock Gen: Build started");
+
+      // Sterilize output directories before starting
+      sterilize(
+        projectRoot,
+        finalConfigs,
+        mergeHandlers,
+        topLevelOutputFolder,
+        topLevelOutputFileName,
+        log
+      );
+
       generateAllHandlers(projectRoot);
     },
   };

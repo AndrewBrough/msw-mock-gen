@@ -57,7 +57,20 @@ export function parseURLsFromFile(
       line.includes(pattern)
     );
 
-    if (shouldExcludeLine) {
+    // Also check for navigation property patterns
+    const isNavigationProperty =
+      line.includes('to: "') ||
+      line.includes('href: "') ||
+      line.includes('pathname: "') ||
+      line.includes('redirect: "') ||
+      line.includes('location: "');
+
+    if (shouldExcludeLine || isNavigationProperty) {
+      console.log(
+        `DEBUG: Excluding line ${
+          index + 1
+        } due to navigation pattern: "${line.trim()}"`
+      );
       return;
     }
 
@@ -76,6 +89,7 @@ export function parseURLsFromFile(
           // Check if this URL is already added
           const exists = urls.some((existing) => existing.path === url);
           if (!exists) {
+            console.log(`DEBUG: Found URL in line ${index + 1}: ${url}`);
             // Determine HTTP method based on context
             let method = "get"; // Default for queries
             if (isMutation) {
