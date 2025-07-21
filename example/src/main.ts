@@ -1,5 +1,5 @@
 import { useAssetsQuery } from "@data/queries/useAssetsQuery";
 
-const { data, isLoading, error } = useAssetsQuery();
+const { data } = useAssetsQuery();
 
 console.log(data);
