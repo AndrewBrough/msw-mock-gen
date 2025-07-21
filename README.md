@@ -2,6 +2,8 @@
 
 A Vite plugin that automatically generates [MSW (Mock Service Worker)](https://www.npmjs.com/package/msw) handlers from your API calls.
 
+📋 **[Changelog](https://github.com/AndrewBrough/msw-mock-gen/blob/main/CHANGELOG.md)** - See what's new in each version
+
 ## Features
 
 - Automatically detects API endpoints from your TypeScript/JavaScript files
