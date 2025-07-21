@@ -13,3 +13,4 @@ dist/
 
 # generated example files
 example/src/data/mocks/
+*.generated.ts
