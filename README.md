@@ -75,6 +75,28 @@ export default defineConfig({
 | `outputFolder` | `string` | `'src'` | Folder where generated handlers will be written |
 | `outputFileName` | `string` | `'mswHandlers.generated'` | Base name for generated files |
 | `excludePatterns` | `string[]` | `[]` | Array of patterns to exclude from URL detection |
+| `quiet` | `boolean` | `true` | Whether to suppress console output (set to `false` for verbose logging) |
+
+### Verbose Logging
+
+To enable verbose logging and see all plugin activity, set `quiet: false`:
+
+```typescript
+// vite.config.ts
+import { defineConfig } from 'vite';
+import mswMockGen from 'msw-mock-gen';
+
+export default defineConfig({
+  plugins: [
+    mswMockGen({
+      watchFolder: 'src/data',
+      outputFolder: 'src/data/mocks',
+      outputFileName: 'mswHandlers.generated',
+      quiet: false // Enable verbose logging
+    })
+  ]
+});
+```
 
 ### Exclude Patterns
 

@@ -9,20 +9,27 @@ export type { MSWMockGenOptions } from './types';
 
 export default function mswMockGen(options: MSWMockGenOptions = {}): Plugin {
   const {
-    watchFolder = 'data',
-    outputFolder = 'src',
+    watchFolder = 'src/data/queries',
+    outputFolder = 'src/data/queries/mocks',
     outputFileName = 'mswHandlers.generated',
-    excludePatterns = []
+    excludePatterns = [],
+    quiet = true
   } = options;
 
   let projectRoot: string;
+
+  const log = (...args: any[]) => {
+    if (!quiet) {
+      console.log(...args);
+    }
+  };
 
   const generateHandlers = async (root: string) => {
     const watchPath = join(root, watchFolder);
     const outputPath = join(root, outputFolder);
     
     if (!existsSync(watchPath)) {
-      console.log(`MSW Mock Gen: Watch folder ${watchPath} does not exist`);
+      log(`MSW Mock Gen: Watch folder ${watchPath} does not exist`);
       return;
     }
 
@@ -67,10 +74,7 @@ export default function mswMockGen(options: MSWMockGenOptions = {}): Plugin {
       const indexFile = join(outputPath, `${outputFileName}.ts`);
       writeFileSync(indexFile, handlers.indexFile, 'utf-8');
       
-      console.log(`MSW Mock Gen: Generated handlers at ${outputPath} with ${allUrls.length} endpoints`);
-      console.log(`  - Query handlers: ${queryHandlersFile}`);
-      console.log(`  - Mutation handlers: ${mutationHandlersFile}`);
-      console.log(`  - Index file: ${indexFile}`);
+      log(`MSW Mock Gen: Generated handlers at ${outputPath} with ${allUrls.length} endpoints`);
     } catch (error) {
       console.error(`MSW Mock Gen: Error writing handlers files:`, error);
     }
@@ -85,8 +89,8 @@ export default function mswMockGen(options: MSWMockGenOptions = {}): Plugin {
     },
 
     configureServer(server) {
-      console.log(`MSW Mock Gen: Watching ${watchFolder} for changes`);
-      console.log(`MSW Mock Gen: Output will be written to ${outputFolder}`);
+      log(`MSW Mock Gen: Watching ${watchFolder} for changes`);
+      log(`MSW Mock Gen: Output will be written to ${outputFolder}`);
 
       // Generate initial handlers
       generateHandlers(projectRoot);
@@ -102,7 +106,7 @@ export default function mswMockGen(options: MSWMockGenOptions = {}): Plugin {
           
           // Skip changes to the output folder to prevent infinite loops
           if (normalizedFile.startsWith(normalizedWatchPath) && !normalizedFile.includes(outputFolder)) {
-            console.log(`MSW Mock Gen: File changed: ${file}`);
+            log(`MSW Mock Gen: File changed: ${file}`);
             generateHandlers(projectRoot);
           }
         };
@@ -114,7 +118,7 @@ export default function mswMockGen(options: MSWMockGenOptions = {}): Plugin {
     },
 
     buildStart() {
-      console.log('MSW Mock Gen: Build started');
+      log('MSW Mock Gen: Build started');
       generateHandlers(projectRoot);
     }
   };

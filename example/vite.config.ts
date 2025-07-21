@@ -6,8 +6,8 @@ export default defineConfig({
   plugins: [
     tsconfigPaths(),
     mswMockGen({
-      watchFolder: 'src/data',
-      outputFolder: 'src/data/mocks',
+      watchFolder: 'src/data/queries',
+      outputFolder: 'src/data/queries/mocks',
       outputFileName: 'mswHandlers.generated',
       excludePatterns: [
         // Navigation patterns

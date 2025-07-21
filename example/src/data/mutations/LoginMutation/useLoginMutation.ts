@@ -1,5 +1,4 @@
-
-import { User } from "@data/types/User/User";
+import { User } from "@data/types/User";
 import { DefaultError, useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 
@@ -29,7 +28,7 @@ export const useLoginMutation = <
     onSuccess: (data) => {
       navigate({ to: "/dashboard", params: {
         data
-      } });
+      }});
     },
     onError: (error) => {
       console.error(error);

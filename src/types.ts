@@ -3,6 +3,7 @@ export interface MSWMockGenOptions {
   outputFolder?: string;
   outputFileName?: string;
   excludePatterns?: string[];
+  quiet?: boolean;
 }
 
 export interface ParsedURL {
