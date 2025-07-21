@@ -41,7 +41,7 @@ export const sterilize = (
   const startTime = Date.now();
   log("MSW Mock Gen: Sterilizing output directories...");
 
-  // Delete files from each config's output folder
+  // Delete files from each config's output folder (but preserve .cache when merging)
   for (const config of configs) {
     const {
       outputFolder = "src/data/queries/mocks",
@@ -50,17 +50,23 @@ export const sterilize = (
 
     const outputPath = join(root, outputFolder);
 
-    // Delete individual generated files
-    deleteFileIfExists(join(outputPath, "queryHandlers.generated.ts"), log);
-    deleteFileIfExists(join(outputPath, "mutationHandlers.generated.ts"), log);
-    deleteFileIfExists(join(outputPath, `${outputFileName}.ts`), log);
+    // Only delete files if we're not merging (when merging, files go to .cache)
+    if (!mergeHandlers) {
+      // Delete individual generated files
+      deleteFileIfExists(join(outputPath, "queryHandlers.generated.ts"), log);
+      deleteFileIfExists(
+        join(outputPath, "mutationHandlers.generated.ts"),
+        log
+      );
+      deleteFileIfExists(join(outputPath, `${outputFileName}.ts`), log);
+    }
   }
 
   // Delete merged handler files if merging is enabled
   if (mergeHandlers) {
     const topLevelOutputPath = join(root, topLevelOutputFolder);
 
-    // Delete merged generated files
+    // Delete merged generated files (but preserve .cache directory)
     deleteFileIfExists(
       join(topLevelOutputPath, "queryHandlers.generated.ts"),
       log
@@ -78,38 +84,4 @@ export const sterilize = (
   const endTime = Date.now();
   const duration = endTime - startTime;
   log(`MSW Mock Gen: Sterilization complete (${duration}ms)`);
-};
-
-/**
- * Cleans up source generated files after merging is complete
- * @param root - Project root directory
- * @param configs - Array of configurations
- * @param log - Logging function
- */
-export const cleanupSourceFiles = (
-  root: string,
-  configs: MSWMockGenConfig[],
-  log: (...args: string[]) => void
-) => {
-  const startTime = Date.now();
-  log("MSW Mock Gen: Cleaning up source generated files...");
-
-  // Delete source files from each config's output folder
-  for (const config of configs) {
-    const {
-      outputFolder = "src/data/queries/mocks",
-      outputFileName = "mswHandlers.generated",
-    } = config;
-
-    const outputPath = join(root, outputFolder);
-
-    // Delete individual generated files (keep only merged ones)
-    deleteFileIfExists(join(outputPath, "queryHandlers.generated.ts"), log);
-    deleteFileIfExists(join(outputPath, "mutationHandlers.generated.ts"), log);
-    deleteFileIfExists(join(outputPath, `${outputFileName}.ts`), log);
-  }
-
-  const endTime = Date.now();
-  const duration = endTime - startTime;
-  log(`MSW Mock Gen: Source file cleanup complete (${duration}ms)`);
 };

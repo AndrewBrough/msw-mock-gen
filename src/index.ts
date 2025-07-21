@@ -2,9 +2,10 @@ import type { Plugin } from "vite";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
 import { glob } from "glob";
+import { createHash } from "crypto";
 import { MSWMockGenOptions, MSWMockGenConfig, ParsedURL } from "./types";
 import { parseURLsFromFile, generateMSWHandlers } from "./parser";
-import { sterilize, cleanupSourceFiles } from "./sterilize";
+import { sterilize } from "./sterilize";
 
 export type { MSWMockGenOptions, MSWMockGenConfig } from "./types";
 
@@ -64,6 +65,16 @@ export default function mswMockGen(
   const finalConfigs = configs.length === 0 ? [defaultConfig] : configs;
 
   let projectRoot: string;
+  let isInitialized = false;
+
+  /**
+   * Creates a hash of the full path to ensure unique cache directory names
+   * @param path - The path to hash
+   * @returns A short hash string
+   */
+  const hashPath = (path: string): string => {
+    return createHash("md5").update(path).digest("hex").substring(0, 8);
+  };
 
   /**
    * Logs messages to console if quiet mode is disabled
@@ -117,9 +128,21 @@ export default function mswMockGen(
 
     // Collect handlers from all configs
     for (const config of configs) {
-      const { outputFolder = "src/data/queries/mocks" } = config;
+      const {
+        watchFolder = "src/data/queries",
+        outputFolder = "src/data/queries/mocks",
+      } = config;
 
-      const configOutputPath = join(root, outputFolder);
+      const watchPath = join(root, watchFolder);
+
+      // When merging is enabled, read from .cache subdirectories
+      // Use the same hash-based approach for consistency
+      // Otherwise, use the original output folder
+      const actualOutputFolder = mergeHandlers
+        ? join(topLevelOutputFolder, ".cache", hashPath(watchPath))
+        : outputFolder;
+
+      const configOutputPath = join(root, actualOutputFolder);
 
       // Check if the config's output files exist
       const queryHandlersFile = join(
@@ -226,9 +249,6 @@ export const handlers = [
       log(
         `MSW Mock Gen: Generated merged handlers at ${topLevelOutputPath} (${duration}ms)`
       );
-
-      // Clean up source files after successful merge
-      cleanupSourceFiles(root, configs, log);
     } catch (error) {
       console.error(
         `MSW Mock Gen: Error writing merged handlers files:`,
@@ -251,7 +271,15 @@ export const handlers = [
     } = config;
 
     const watchPath = join(root, watchFolder);
-    const outputPath = join(root, outputFolder);
+
+    // When merging is enabled, output to .cache subdirectory in the merged output folder
+    // Use a hash of the full path to ensure unique cache directory names
+    // Otherwise, use the original output folder
+    const actualOutputFolder = mergeHandlers
+      ? join(topLevelOutputFolder, ".cache", hashPath(watchPath))
+      : outputFolder;
+
+    const outputPath = join(root, actualOutputFolder);
 
     if (!existsSync(watchPath)) {
       log(`MSW Mock Gen: Watch folder ${watchPath} does not exist`);
@@ -344,6 +372,31 @@ export const handlers = [
     log(`MSW Mock Gen: Handler generation complete (${duration}ms)`);
   };
 
+  /**
+   * Generates MSW handlers for a specific configuration and merges all handlers
+   * @param root - Project root directory
+   * @param changedConfig - The configuration that needs to be regenerated
+   */
+  const generateSingleConfigHandlers = async (
+    root: string,
+    changedConfig: MSWMockGenConfig
+  ) => {
+    const startTime = Date.now();
+    log(
+      `MSW Mock Gen: Regenerating handlers for config: ${changedConfig.watchFolder}`
+    );
+
+    // Only regenerate the changed config
+    await generateHandlers(root, changedConfig);
+
+    // Always merge handlers after any config change
+    await mergeAllHandlers(root, finalConfigs);
+
+    const endTime = Date.now();
+    const duration = endTime - startTime;
+    log(`MSW Mock Gen: Handler regeneration complete (${duration}ms)`);
+  };
+
   return {
     name: "msw-mock-gen",
     apply: "serve",
@@ -353,6 +406,12 @@ export const handlers = [
     },
 
     configureServer(server) {
+      // Only initialize once
+      if (isInitialized) {
+        return;
+      }
+      isInitialized = true;
+
       log(`MSW Mock Gen: Watching ${finalConfigs.length} configuration(s)`);
 
       for (const config of finalConfigs) {
@@ -370,7 +429,8 @@ export const handlers = [
         );
       }
 
-      // Sterilize output directories before starting
+      // Only sterilize on initial startup, not on every file change
+      // This ensures .cache files are preserved between events
       sterilize(
         projectRoot,
         finalConfigs,
@@ -404,7 +464,7 @@ export const handlers = [
               !normalizedFile.includes(outputFolder)
             ) {
               log(`MSW Mock Gen: File changed: ${file}`);
-              generateAllHandlers(projectRoot);
+              generateSingleConfigHandlers(projectRoot, config);
             }
           };
 
@@ -417,6 +477,9 @@ export const handlers = [
 
     buildStart() {
       log("MSW Mock Gen: Build started");
+
+      // Reset initialization flag for new builds
+      isInitialized = false;
 
       // Sterilize output directories before starting
       sterilize(
