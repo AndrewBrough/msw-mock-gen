@@ -1,6 +1,8 @@
 export interface MSWMockGenOptions {
   watchFolder?: string;
   outputFolder?: string;
+  outputFileName?: string;
+  excludePatterns?: string[];
 }
 
 export interface ParsedURL {
@@ -8,6 +10,7 @@ export interface ParsedURL {
   method?: string;
   source: string;
   line?: number;
+  type?: 'query' | 'mutation' | 'unknown';
 }
 
 export interface MSWHandler {

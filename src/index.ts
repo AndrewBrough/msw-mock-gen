@@ -10,7 +10,9 @@ export type { MSWMockGenOptions } from './types';
 export default function mswMockGen(options: MSWMockGenOptions = {}): Plugin {
   const {
     watchFolder = 'data',
-    outputFolder = 'src'
+    outputFolder = 'src',
+    outputFileName = 'mswHandlers.generated',
+    excludePatterns = []
   } = options;
 
   let projectRoot: string;
@@ -32,7 +34,8 @@ export default function mswMockGen(options: MSWMockGenOptions = {}): Plugin {
     // Find all TypeScript/JavaScript files in the watch folder
     const files = await glob('**/*.{ts,js,tsx,jsx}', { 
       cwd: watchPath,
-      absolute: true 
+      absolute: true,
+      ignore: [`**/${outputFolder}/**`]
     });
 
     const allUrls: any[] = [];
@@ -41,7 +44,7 @@ export default function mswMockGen(options: MSWMockGenOptions = {}): Plugin {
     for (const file of files) {
       try {
         const content = readFileSync(file, 'utf-8');
-        const urls = parseURLsFromFile(content, file);
+        const urls = parseURLsFromFile(content, file, excludePatterns);
         allUrls.push(...urls);
       } catch (error) {
         console.error(`MSW Mock Gen: Error reading file ${file}:`, error);
@@ -49,14 +52,27 @@ export default function mswMockGen(options: MSWMockGenOptions = {}): Plugin {
     }
 
     // Generate MSW handlers
-    const handlersCode = generateMSWHandlers(allUrls);
-    const outputFile = join(outputPath, 'msw-handlers.ts');
+    const handlers = generateMSWHandlers(allUrls);
     
     try {
-      writeFileSync(outputFile, handlersCode, 'utf-8');
-      console.log(`MSW Mock Gen: Generated handlers at ${outputFile} with ${allUrls.length} endpoints`);
+      // Write query handlers
+      const queryHandlersFile = join(outputPath, 'queryHandlers.generated.ts');
+      writeFileSync(queryHandlersFile, handlers.queryHandlers, 'utf-8');
+      
+      // Write mutation handlers
+      const mutationHandlersFile = join(outputPath, 'mutationHandlers.generated.ts');
+      writeFileSync(mutationHandlersFile, handlers.mutationHandlers, 'utf-8');
+      
+      // Write index file
+      const indexFile = join(outputPath, `${outputFileName}.ts`);
+      writeFileSync(indexFile, handlers.indexFile, 'utf-8');
+      
+      console.log(`MSW Mock Gen: Generated handlers at ${outputPath} with ${allUrls.length} endpoints`);
+      console.log(`  - Query handlers: ${queryHandlersFile}`);
+      console.log(`  - Mutation handlers: ${mutationHandlersFile}`);
+      console.log(`  - Index file: ${indexFile}`);
     } catch (error) {
-      console.error(`MSW Mock Gen: Error writing handlers file:`, error);
+      console.error(`MSW Mock Gen: Error writing handlers files:`, error);
     }
   };
 
@@ -75,11 +91,11 @@ export default function mswMockGen(options: MSWMockGenOptions = {}): Plugin {
       // Generate initial handlers
       generateHandlers(projectRoot);
 
-      // Watch for file changes, but exclude the output folder
+      // Watch for file changes and deletions, but exclude the output folder
       const watchPath = join(projectRoot, watchFolder);
       if (existsSync(watchPath)) {
         server.watcher.add(watchPath);
-        server.watcher.on('change', (file) => {
+        const handleFileEvent = (file: string) => {
           // Check if the changed file is within the watchFolder or its subdirectories
           const normalizedFile = file.replace(/\\/g, '/'); // Normalize path separators
           const normalizedWatchPath = watchPath.replace(/\\/g, '/');
@@ -89,7 +105,11 @@ export default function mswMockGen(options: MSWMockGenOptions = {}): Plugin {
             console.log(`MSW Mock Gen: File changed: ${file}`);
             generateHandlers(projectRoot);
           }
-        });
+        };
+
+        server.watcher.on('change', (file) => handleFileEvent(file));
+        server.watcher.on('unlink', (file) => handleFileEvent(file));
+        server.watcher.on('add', (file) => handleFileEvent(file));
       }
     },
 

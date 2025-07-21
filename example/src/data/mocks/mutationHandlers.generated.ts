@@ -1,9 +1,9 @@
 import { http, HttpResponse } from 'msw';
 
-export const handlers = [
-  http.all('/assets', () => {
+export const mutationHandlers = [
+  http.post('/auth/login', () => {
     return HttpResponse.json({
-      message: 'Mock response for /assets',
+      message: 'Mock response for /auth/login',
       timestamp: new Date().toISOString()
     });
   })
