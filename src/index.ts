@@ -30,13 +30,14 @@ export type { MSWMockGenOptions, MSWMockGenConfig } from "./types";
  *           watchFolder: 'src/data/queries',
  *           outputFolder: 'src/data/queries/mocks',
  *           outputFileName: 'mswHandlers.generated',
- *           excludePatterns: ['navigate({', 'to: "/']
+ *           excludePatterns: ['navigate({', 'to: "/'] // Config-specific patterns
  *         }
  *       ],
  *       quiet: true,
  *       mergeHandlers: true,
  *       outputFolder: 'src/mocks',
- *       outputFileName: 'mswHandlers.generated'
+ *       outputFileName: 'mswHandlers.generated',
+ *       excludePatterns: ['navigate({', 'href: "/'] // Global patterns (applied to all configs)
  *     })
  *   ]
  * });
@@ -51,6 +52,7 @@ export default function mswMockGen(
     mergeHandlers = true,
     outputFolder: topLevelOutputFolder = "src/mocks",
     outputFileName: topLevelOutputFileName = "mswHandlers.generated",
+    excludePatterns: globalExcludePatterns = [],
   } = options;
 
   // Default config if none provided
@@ -267,8 +269,14 @@ export const handlers = [
       watchFolder = "src/data/queries",
       outputFolder = "src/data/queries/mocks",
       outputFileName = "mswHandlers.generated",
-      excludePatterns = [],
+      excludePatterns: configExcludePatterns = [],
     } = config;
+
+    // Merge global and config-specific exclude patterns
+    const excludePatterns = [
+      ...globalExcludePatterns,
+      ...configExcludePatterns,
+    ];
 
     const watchPath = join(root, watchFolder);
 

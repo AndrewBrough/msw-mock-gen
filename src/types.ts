@@ -26,6 +26,8 @@ export interface MSWMockGenOptions {
   outputFolder?: string;
   /** Top-level output file name for merged handlers (default: "mswHandlers.generated") */
   outputFileName?: string;
+  /** Global array of patterns to exclude from URL detection (can be overridden by individual configs) */
+  excludePatterns?: string[];
 }
 
 /**

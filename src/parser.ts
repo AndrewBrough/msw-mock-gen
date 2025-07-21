@@ -57,20 +57,7 @@ export function parseURLsFromFile(
       line.includes(pattern)
     );
 
-    // Also check for navigation property patterns
-    const isNavigationProperty =
-      line.includes('to: "') ||
-      line.includes('href: "') ||
-      line.includes('pathname: "') ||
-      line.includes('redirect: "') ||
-      line.includes('location: "');
-
-    if (shouldExcludeLine || isNavigationProperty) {
-      console.log(
-        `DEBUG: Excluding line ${
-          index + 1
-        } due to navigation pattern: "${line.trim()}"`
-      );
+    if (shouldExcludeLine) {
       return;
     }
 
