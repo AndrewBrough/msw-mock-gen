@@ -53,6 +53,7 @@ export default function mswMockGen(
     outputFolder: topLevelOutputFolder = "src/mocks",
     outputFileName: topLevelOutputFileName = "mswHandlers.generated",
     excludePatterns: globalExcludePatterns = [],
+    formatScript,
   } = options;
 
   // Default config if none provided
@@ -85,6 +86,33 @@ export default function mswMockGen(
   const log = (...args: string[]) => {
     if (!quiet) {
       console.log(...args);
+    }
+  };
+
+  /**
+   * Runs the format script if specified
+   * @param root - Project root directory
+   */
+  const runFormatScript = async (root: string) => {
+    if (!formatScript) {
+      return;
+    }
+
+    try {
+      const { exec } = await import("child_process");
+      const { promisify } = await import("util");
+      const execAsync = promisify(exec);
+
+      log(`MSW Mock Gen: Running format script: ${formatScript}`);
+      const startTime = Date.now();
+
+      await execAsync(`npm run ${formatScript}`, { cwd: root });
+
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+      log(`MSW Mock Gen: Format script completed (${duration}ms)`);
+    } catch (error) {
+      console.error(`MSW Mock Gen: Error running format script:`, error);
     }
   };
 
@@ -375,6 +403,9 @@ export const handlers = [
     // Merge handlers if enabled
     await mergeAllHandlers(root, finalConfigs);
 
+    // Run format script if specified
+    await runFormatScript(root);
+
     const endTime = Date.now();
     const duration = endTime - startTime;
     log(`MSW Mock Gen: Handler generation complete (${duration}ms)`);
@@ -399,6 +430,9 @@ export const handlers = [
 
     // Always merge handlers after any config change
     await mergeAllHandlers(root, finalConfigs);
+
+    // Run format script if specified
+    await runFormatScript(root);
 
     const endTime = Date.now();
     const duration = endTime - startTime;

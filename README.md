@@ -168,6 +168,8 @@ export default defineConfig({
           ],
         },
       ],
+      // Run prettier after generating handlers
+      formatScript: "format",
     }),
   ],
 });
@@ -177,13 +179,14 @@ export default defineConfig({
 
 ### Top-level Options
 
-| Option           | Type                 | Default                   | Description                                                               |
-| ---------------- | -------------------- | ------------------------- | ------------------------------------------------------------------------- |
-| `configs`        | `MSWMockGenConfig[]` | `[]`                      | Array of configuration objects for different watch/output folder pairs    |
-| `quiet`          | `boolean`            | `true`                    | Whether to suppress console output (set to `false` for verbose logging)   |
-| `mergeHandlers`  | `boolean`            | `true`                    | Whether to merge all handlers from different configs into a single output |
-| `outputFolder`   | `string`             | `'src/mocks'`             | Top-level output folder for merged handlers                               |
-| `outputFileName` | `string`             | `'mswHandlers.generated'` | Top-level output file name for merged handlers                            |
+| Option           | Type                 | Default                   | Description                                                                                   |
+| ---------------- | -------------------- | ------------------------- | --------------------------------------------------------------------------------------------- |
+| `configs`        | `MSWMockGenConfig[]` | `[]`                      | Array of configuration objects for different watch/output folder pairs                        |
+| `quiet`          | `boolean`            | `true`                    | Whether to suppress console output (set to `false` for verbose logging)                       |
+| `mergeHandlers`  | `boolean`            | `true`                    | Whether to merge all handlers from different configs into a single output                     |
+| `outputFolder`   | `string`             | `'src/mocks'`             | Top-level output folder for merged handlers                                                   |
+| `outputFileName` | `string`             | `'mswHandlers.generated'` | Top-level output file name for merged handlers                                                |
+| `formatScript`   | `string`             | `undefined`               | Optional npm script to run after generating handlers (e.g., "format", "prettier", "lint:fix") |
 
 ### Individual Config Options
 
@@ -218,6 +221,47 @@ export default defineConfig({
   ],
 });
 ```
+
+### Format Script
+
+The `formatScript` option allows you to run an npm script after generating handlers to format the code according to your project's standards. This is useful for ensuring consistent formatting with tools like Prettier, ESLint, or any custom formatting script.
+
+```typescript
+// vite.config.ts
+import { defineConfig } from "vite";
+import mswMockGen from "msw-mock-gen";
+
+export default defineConfig({
+  plugins: [
+    mswMockGen({
+      configs: [
+        {
+          watchFolder: "src/data",
+          outputFolder: "src/data/mocks",
+          outputFileName: "mswHandlers.generated",
+        },
+      ],
+      // Run prettier after generating handlers
+      formatScript: "format",
+    }),
+  ],
+});
+```
+
+Add the corresponding script to your `package.json`:
+
+```json
+{
+  "scripts": {
+    "format": "prettier --write src/mocks/*.generated.ts"
+  },
+  "devDependencies": {
+    "prettier": "^3.0.0"
+  }
+}
+```
+
+The format script will run automatically after each handler generation, ensuring your generated files are properly formatted.
 
 ### Exclude Patterns
 

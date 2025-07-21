@@ -28,6 +28,8 @@ export interface MSWMockGenOptions {
   outputFileName?: string;
   /** Global array of patterns to exclude from URL detection (can be overridden by individual configs) */
   excludePatterns?: string[];
+  /** Optional npm script to run after generating handlers (e.g., "format", "prettier", "lint:fix") */
+  formatScript?: string;
 }
 
 /**

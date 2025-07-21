@@ -31,6 +31,8 @@ export default defineConfig({
         'location: "/',
         'to: "/',
       ],
+      // Run prettier after generating handlers to fix formatting
+      formatScript: "format",
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }) as any,
   ],
