@@ -88,7 +88,21 @@ export default function mswMockGen(
 
     // Ensure output directory exists
     if (!existsSync(outputPath)) {
-      mkdirSync(outputPath, { recursive: true });
+      try {
+        mkdirSync(outputPath, { recursive: true });
+      } catch {
+        // Fallback for older Node.js versions that don't support recursive option
+        const pathParts = outputPath.split('/');
+        let currentPath = '';
+        for (const part of pathParts) {
+          if (part) {
+            currentPath += '/' + part;
+            if (!existsSync(currentPath)) {
+              mkdirSync(currentPath);
+            }
+          }
+        }
+      }
     }
 
     // Find all TypeScript/JavaScript files in the watch folder
