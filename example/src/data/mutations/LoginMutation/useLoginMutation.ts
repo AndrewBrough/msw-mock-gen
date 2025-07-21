@@ -26,9 +26,12 @@ export const useLoginMutation = <
       }).then((res) => res.json());
     },
     onSuccess: (data) => {
-      navigate({ to: "/dashboard", params: {
-        data
-      }});
+      navigate({
+        to: "/dashboard",
+        params: {
+          data,
+        },
+      });
     },
     onError: (error) => {
       console.error(error);

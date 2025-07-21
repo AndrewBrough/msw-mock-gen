@@ -14,16 +14,8 @@
     "rootDir": "src",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": false,
+    "noEmit": false
   },
-  "include": [
-    "src/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "example",
-    "dist",
-    "**/*.test.ts",
-    "**/*.spec.ts"
-  ]
-} 
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "example", "dist", "**/*.test.ts", "**/*.spec.ts"]
+}

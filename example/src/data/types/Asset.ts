@@ -6,7 +6,7 @@ export interface Asset {
   model: string;
   serialNumber: string;
   location: string;
-  status: 'active' | 'inactive' | 'maintenance';
+  status: "active" | "inactive" | "maintenance";
   createdAt: string;
   updatedAt: string;
-} 
+}

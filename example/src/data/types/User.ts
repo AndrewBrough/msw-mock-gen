@@ -3,8 +3,8 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'admin' | 'user' | 'viewer';
+  role: "admin" | "user" | "viewer";
   organizationId: string;
   createdAt: string;
   updatedAt: string;
-} 
+}

@@ -35,7 +35,7 @@ export interface ParsedURL {
   /** Line number in the source file */
   line?: number;
   /** Type of operation (query for GET, mutation for POST/PUT/DELETE) */
-  type?: 'query' | 'mutation' | 'unknown';
+  type?: "query" | "mutation" | "unknown";
 }
 
 /**
@@ -48,4 +48,4 @@ export interface MSWHandler {
   method: string;
   /** Generated MSW handler code */
   handler: string;
-} 
+}

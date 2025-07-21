@@ -3,15 +3,11 @@ import { DefaultError, useQuery } from "@tanstack/react-query";
 
 export const REPORTS_QUERY_KEY = "REPORTS_QUERY_KEY";
 
-
 export type ReportsQueryData = Report[];
 export type ReportsFilters = Pick<Report, "category" | "name">;
 
 export const useReportsQuery = (filters: ReportsFilters) => {
-  const query = useQuery<
-    ReportsQueryData,
-    DefaultError
-  >({
+  const query = useQuery<ReportsQueryData, DefaultError>({
     queryKey: [REPORTS_QUERY_KEY],
     queryFn: () => {
       return fetch("/reports", {

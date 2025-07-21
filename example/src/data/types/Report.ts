@@ -4,4 +4,4 @@ export interface Report {
   category: string;
   createdAt: string;
   updatedAt: string;
-} 
+}

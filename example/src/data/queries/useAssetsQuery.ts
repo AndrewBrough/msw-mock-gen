@@ -5,10 +5,7 @@ export const ASSETS_QUERY_KEY = "ASSETS_QUERY_KEY";
 export type AssetsQueryData = Asset[];
 
 export const useAssetsQuery = () => {
-  const query = useQuery<
-    AssetsQueryData,
-    DefaultError
-  >({
+  const query = useQuery<AssetsQueryData, DefaultError>({
     queryKey: [ASSETS_QUERY_KEY],
     queryFn: () => {
       return fetch("/assets").then((res) => res.json());
@@ -17,4 +14,3 @@ export const useAssetsQuery = () => {
 
   return query;
 };
-
