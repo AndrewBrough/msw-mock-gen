@@ -9,13 +9,13 @@
     "strict": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "declaration": true,
-    "outDir": "./dist",
-    "rootDir": "src",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": false
+    "noEmit": false,
+    "declaration": true,
+    "outDir": "./dist",
+    "rootDir": "src"
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "example", "dist", "**/*.test.ts", "**/*.spec.ts"]
+  "exclude": ["node_modules", "example", "dist"]
 }

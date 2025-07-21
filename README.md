@@ -8,10 +8,12 @@ A Vite plugin that automatically generates [MSW (Mock Service Worker)](https://w
 
 - Automatically detects API endpoints from your TypeScript/JavaScript files
 - Generates separate handlers for queries and mutations
+- **NEW**: Automatically generates TypeScript mock data files for query and mutation hooks
+- **NEW**: Type-safe mock data with proper TypeScript types based on hook return types
 - Watches for file changes and regenerates handlers automatically
 - Excludes navigation URLs and other non-API patterns
 - Supports custom exclusion patterns
-- **NEW**: Support for multiple watch/output folder configurations
+- Support for multiple watch/output folder configurations
 
 ## Installation
 
@@ -291,6 +293,15 @@ When `mergeHandlers` is enabled (default), the plugin also generates merged file
 2. `{outputFolder}/mutationHandlers.generated.ts` - All mutation handlers from all configs
 3. `{outputFolder}/{outputFileName}.ts` - Index file combining all handlers from all configs
 
+### Mock Data Files
+
+The plugin also automatically generates TypeScript mock data files for each query and mutation hook it detects:
+
+- `{hookName}.mocks.gen.ts` - Type-safe mock data file with proper TypeScript types
+- These files are created alongside the original query/mutation files
+- They include proper type definitions based on the hook's return type
+- The generated mock data is automatically imported and used in the MSW handlers
+
 ## Example
 
 Given a file with API calls:
@@ -314,18 +325,27 @@ export const useLoginMutation = () => {
 
 The plugin will generate:
 
+**Mock Data File:**
+```typescript
+// src/data/mutations/LoginMutation/useLoginMutation.mocks.gen.ts
+import { useLoginMutation } from "./useLoginMutation";
+
+type QueryData = ReturnType<typeof useLoginMutation>["data"];
+
+export const mockLoginMutationData: QueryData = undefined; // TODO: Replace with mock mutation data of type: LoginData
+```
+
+**MSW Handler:**
 ```typescript
 // src/data/mocks/mutationHandlers.generated.ts
 import { http, HttpResponse } from "msw";
+import { mockLoginMutationData } from "src/data/mutations/LoginMutation/useLoginMutation.mocks.gen";
 
 export const mutationHandlers = [
   http.post("/auth/login", () => {
-    return HttpResponse.json({
-      message: "Mock response for /auth/login",
-      timestamp: new Date().toISOString(),
-    });
+    return HttpResponse.json(mockLoginMutationData);
   }),
 ];
 ```
 
-Note that the `/dashboard` URL from the navigation is excluded and not included in the generated handlers.
+Note that the `/dashboard` URL from the navigation is excluded and not included in the generated handlers. The mock data file provides a type-safe foundation for your mock responses.

@@ -34,7 +34,7 @@ export default defineConfig({
         // 'redirect: "/',
         // 'location: "/',
       ],
-      formatScript: "format",
+      formatScript: "lint:fix",
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }) as any,
   ],

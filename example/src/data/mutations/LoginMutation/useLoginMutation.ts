@@ -11,13 +11,10 @@ export interface LoginVariables {
 
 export const LOGIN_MUTATION_KEY = "LOGIN_MUTATION_KEY";
 
-export const useLoginMutation = <
-  D extends LoginData,
-  V extends LoginVariables
->() => {
+export const useLoginMutation = () => {
   const navigate = useNavigate();
 
-  return useMutation<D, DefaultError, V>({
+  return useMutation<LoginData, DefaultError, LoginVariables>({
     mutationKey: [LOGIN_MUTATION_KEY],
     mutationFn: (variables) => {
       return fetch("/auth/login", {

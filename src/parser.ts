@@ -26,7 +26,7 @@ import { ParsedURL } from "./types";
 export function parseURLsFromFile(
   content: string,
   filename: string,
-  excludePatterns: string[] = []
+  excludePatterns: string[] = [],
 ): ParsedURL[] {
   const urls: ParsedURL[] = [];
   const lines = content.split("\n");
@@ -54,7 +54,7 @@ export function parseURLsFromFile(
 
     // Check if this line should be excluded based on patterns
     const shouldExcludeLine = excludePatterns.some((pattern) =>
-      line.includes(pattern)
+      line.includes(pattern),
     );
 
     if (shouldExcludeLine) {
@@ -146,7 +146,16 @@ export function parseURLsFromFile(
  * // }
  * ```
  */
-export function generateMSWHandlers(urls: ParsedURL[]): {
+export function generateMSWHandlers(
+  urls: ParsedURL[],
+  mockDataFiles: Array<{
+    originalFilePath: string;
+    mockDataFilePath: string;
+    hookName: string;
+    dataType: string;
+    type: "query" | "mutation";
+  }> = [],
+): {
   queryHandlers: string;
   mutationHandlers: string;
   indexFile: string;
@@ -172,52 +181,156 @@ export const handlers = [
 
   // Deduplicate URLs by path within each category
   const uniqueQueryUrls = queryUrls.filter(
-    (url, index, self) => index === self.findIndex((u) => u.path === url.path)
+    (url, index, self) => index === self.findIndex((u) => u.path === url.path),
   );
   const uniqueMutationUrls = mutationUrls.filter(
-    (url, index, self) => index === self.findIndex((u) => u.path === url.path)
+    (url, index, self) => index === self.findIndex((u) => u.path === url.path),
   );
   const uniqueUnknownUrls = unknownUrls.filter(
-    (url, index, self) => index === self.findIndex((u) => u.path === url.path)
+    (url, index, self) => index === self.findIndex((u) => u.path === url.path),
   );
+
+  // Helper function to convert hook name to mock data variable name
+  const getMockDataVarName = (hookName: string) => {
+    const baseName = hookName.replace(/^use/, "mock");
+    return baseName.charAt(0).toLowerCase() + baseName.slice(1) + "Data";
+  };
+
+  // Helper function to find mock data for a URL
+  const findMockDataForUrl = (url: ParsedURL) => {
+    // Try to find a mock data file that matches this URL pattern
+    // This is a simple heuristic - we'll match based on the URL path
+    return mockDataFiles.find((mockData) => {
+      // For now, we'll use a simple approach: if the URL path contains keywords
+      // that might match the hook name, we'll use that mock data
+      const urlPath = url.path.toLowerCase();
+      const hookName = mockData.hookName.toLowerCase();
+
+      // Check if URL path contains parts of the hook name
+      const hookParts = hookName
+        .replace(/use|query|mutation/g, "")
+        .split(/(?=[A-Z])/);
+      return hookParts.some((part) => urlPath.includes(part.toLowerCase()));
+    });
+  };
 
   // Generate query handlers
   const queryHandlers = uniqueQueryUrls.map((url) => {
     const method = url.method || "get";
-    return `  http.${method}('${url.path}', () => {
+    const mockData = findMockDataForUrl(url);
+
+    if (mockData) {
+      // Use the mock data variable name
+      const mockDataVarName = getMockDataVarName(mockData.hookName);
+      return `  http.${method}('${url.path}', () => {
+    return HttpResponse.json(${mockDataVarName});
+  })`;
+    } else {
+      return `  http.${method}('${url.path}', () => {
     return HttpResponse.json({
       message: 'Mock response for ${url.path}',
       timestamp: new Date().toISOString()
     });
   })`;
+    }
   });
 
   // Generate mutation handlers
   const mutationHandlers = uniqueMutationUrls.map((url) => {
     const method = url.method || "post";
-    return `  http.${method}('${url.path}', () => {
+    const mockData = findMockDataForUrl(url);
+
+    if (mockData) {
+      // Use the mock data variable name
+      const mockDataVarName = getMockDataVarName(mockData.hookName);
+      return `  http.${method}('${url.path}', () => {
+    return HttpResponse.json(${mockDataVarName});
+  })`;
+    } else {
+      return `  http.${method}('${url.path}', () => {
     return HttpResponse.json({
       message: 'Mock response for ${url.path}',
       timestamp: new Date().toISOString()
     });
   })`;
+    }
   });
 
   // Generate unknown handlers (treat as queries)
   const unknownHandlers = uniqueUnknownUrls.map((url) => {
     const method = url.method || "get";
-    return `  http.${method}('${url.path}', () => {
+    const mockData = findMockDataForUrl(url);
+
+    if (mockData) {
+      // Use the mock data variable name
+      const mockDataVarName = getMockDataVarName(mockData.hookName);
+      return `  http.${method}('${url.path}', () => {
+    return HttpResponse.json(${mockDataVarName});
+  })`;
+    } else {
+      return `  http.${method}('${url.path}', () => {
     return HttpResponse.json({
       message: 'Mock response for ${url.path}',
       timestamp: new Date().toISOString()
     });
   })`;
+    }
   });
+
+  // Collect all unique mock data imports with their variable names
+  const mockDataImports = new Map<string, string>();
+
+  // Add imports for all mock data files
+  mockDataFiles.forEach((mockData) => {
+    const mockDataVarName = getMockDataVarName(mockData.hookName);
+
+    // Calculate the full path from the project root to the mock data file
+    // Extract the path relative to the project root (everything after the project root)
+    const projectRootIndex = mockData.mockDataFilePath.indexOf("/src/");
+    const fullPath = mockData.mockDataFilePath.substring(projectRootIndex + 1); // Remove leading slash
+    const importPath = fullPath.replace(".ts", "");
+
+    mockDataImports.set(mockDataVarName, importPath);
+  });
+
+  // Helper to extract used mock data variable names from handler code
+  function extractUsedMockVars(handlers: string[]): Set<string> {
+    const used = new Set<string>();
+    const regex = /HttpResponse\.json\((\w+)\)/g;
+    for (const handler of handlers) {
+      let match;
+      while ((match = regex.exec(handler))) {
+        used.add(match[1]);
+      }
+    }
+    return used;
+  }
+
+  const usedQueryVars = extractUsedMockVars([
+    ...queryHandlers,
+    ...unknownHandlers,
+  ]);
+  const usedMutationVars = extractUsedMockVars(mutationHandlers);
+
+  // Generate import statements for mock data, filtered by type
+  const queryMockDataImports = Array.from(mockDataImports.entries())
+    .filter(([varName]) => usedQueryVars.has(varName))
+    .map(
+      ([varName, importPath]) => `import { ${varName} } from '${importPath}';`,
+    )
+    .join("\n");
+
+  const mutationMockDataImports = Array.from(mockDataImports.entries())
+    .filter(([varName]) => usedMutationVars.has(varName))
+    .map(
+      ([varName, importPath]) => `import { ${varName} } from '${importPath}';`,
+    )
+    .join("\n");
 
   const queryHandlersCode =
     queryHandlers.concat(unknownHandlers).length > 0
       ? `import { http, HttpResponse } from 'msw';
-
+${queryMockDataImports ? `\n${queryMockDataImports}\n` : ""}
 export const queryHandlers = [
 ${queryHandlers.concat(unknownHandlers).join(",\n")}
 ];`
@@ -226,7 +339,7 @@ ${queryHandlers.concat(unknownHandlers).join(",\n")}
   const mutationHandlersCode =
     mutationHandlers.length > 0
       ? `import { http, HttpResponse } from 'msw';
-
+${mutationMockDataImports ? `\n${mutationMockDataImports}\n` : ""}
 export const mutationHandlers = [
 ${mutationHandlers.join(",\n")}
 ];`

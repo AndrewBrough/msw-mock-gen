@@ -9,7 +9,7 @@ import { MSWMockGenConfig } from "./types";
  */
 export const deleteFileIfExists = (
   filePath: string,
-  log: (...args: string[]) => void
+  log: (...args: string[]) => void,
 ) => {
   if (existsSync(filePath)) {
     try {
@@ -36,7 +36,7 @@ export const sterilize = (
   mergeHandlers: boolean,
   topLevelOutputFolder: string,
   topLevelOutputFileName: string,
-  log: (...args: string[]) => void
+  log: (...args: string[]) => void,
 ) => {
   const startTime = Date.now();
   log("MSW Mock Gen: Sterilizing output directories...");
@@ -56,7 +56,7 @@ export const sterilize = (
       deleteFileIfExists(join(outputPath, "queryHandlers.generated.ts"), log);
       deleteFileIfExists(
         join(outputPath, "mutationHandlers.generated.ts"),
-        log
+        log,
       );
       deleteFileIfExists(join(outputPath, `${outputFileName}.ts`), log);
     }
@@ -69,15 +69,15 @@ export const sterilize = (
     // Delete merged generated files (but preserve .cache directory)
     deleteFileIfExists(
       join(topLevelOutputPath, "queryHandlers.generated.ts"),
-      log
+      log,
     );
     deleteFileIfExists(
       join(topLevelOutputPath, "mutationHandlers.generated.ts"),
-      log
+      log,
     );
     deleteFileIfExists(
       join(topLevelOutputPath, `${topLevelOutputFileName}.ts`),
-      log
+      log,
     );
   }
 

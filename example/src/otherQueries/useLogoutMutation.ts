@@ -14,7 +14,7 @@ export const LOGOUT_MUTATION_KEY = "LOGOUT_MUTATION_KEY";
 
 export const useLogoutMutation = <
   D extends LogoutData,
-  V extends LogoutVariables
+  V extends LogoutVariables,
 >() => {
   const navigate = useNavigate();
 

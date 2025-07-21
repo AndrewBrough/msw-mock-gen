@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.4] - 2025-01-21
+
+### Added
+
+- **Mock data generation**: Automatically generates TypeScript mock data files for query and mutation hooks
+- **Query/Mutation parsing**: Enhanced parser to detect and extract hook information from TypeScript files
+- **Mock data file generation**: Creates `.mocks.gen.ts` files alongside original query/mutation files
+- **Type-safe mock data**: Generated mock data files include proper TypeScript types based on hook return types
+- **Automatic mock data integration**: Generated mock data is automatically imported and used in MSW handlers
+
+### Changed
+
+- **Dependency updates**: Updated all development dependencies to latest versions
+  - TypeScript: ^4.5.0 → ^5.8.3
+  - ESLint: ^8.0.0 → ^8.57.1
+  - Prettier: ^2.0.0 → ^3.6.2
+  - Vite: ^4.0.0 → ^5.4.19
+  - Added ESLint Prettier integration and unused imports plugin
+- **Enhanced code quality**: Improved ESLint and Prettier configurations for better code formatting
+- **Example improvements**: Updated example project with comprehensive mock data generation examples
+
+### Fixed
+
+- **Exclude patterns**: Improved pattern matching for better query/mutation parsing
+- **Code formatting**: Enhanced linting rules and formatting consistency across the project
+
 ## [1.0.3] - 2025-01-21
 
 ### Changed

@@ -12,5 +12,4 @@ dist/
 .DS_Store
 
 # generated example files
-example/src/data/mocks/
 *.generated.ts
