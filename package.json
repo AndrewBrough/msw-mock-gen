@@ -1,6 +1,6 @@
 {
   "name": "msw-mock-gen",
-  "version": "1.0.1",
+  "version": "1.0.1b",
   "description": "A Vite plugin that automatically generates MSW (Mock Service Worker) handlers from your API calls by watching TypeScript/JavaScript files and parsing URL patterns. Supports Vite 2+ and Node.js 12+ for maximum compatibility.",
   "type": "module",
   "main": "dist/index.js",
@@ -39,16 +39,16 @@
     "auto-generate",
     "file-watcher"
   ],
-  "author": "Andrew Brough <your-actual-email@example.com>",
+  "author": "Andrew Brough <andrew.jm.brough@gmail.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/your-actual-username/msw-mock-gen.git"
+    "url": "git+https://github.com/AndrewBrough/msw-mock-gen.git"
   },
   "bugs": {
-    "url": "https://github.com/your-actual-username/msw-mock-gen/issues"
+    "url": "https://github.com/AndrewBrough/msw-mock-gen/issues"
   },
-  "homepage": "https://github.com/your-actual-username/msw-mock-gen#readme",
+  "homepage": "https://github.com/AndrewBrough/msw-mock-gen#readme",
   "engines": {
     "node": ">=12.0.0"
   },
